@@ -4,26 +4,23 @@ import { useState, useEffect, useCallback } from 'react';
 
 /**
  * localStorage hook with SSR safety.
+ * Reads initial value lazily via useState initializer (no effect setState).
  *
  * @param {string} key - localStorage key
  * @param {*} initialValue - default value
  * @returns {[value, setValue, removeValue]}
  */
 export function useLocalStorage(key, initialValue) {
-  const [storedValue, setStoredValue] = useState(initialValue);
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  useEffect(() => {
+  // Lazy initializer — reads localStorage once on mount, avoids setState-in-effect
+  const [storedValue, setStoredValue] = useState(() => {
+    if (typeof window === 'undefined') return initialValue;
     try {
       const item = window.localStorage.getItem(key);
-      if (item !== null) {
-        setStoredValue(JSON.parse(item));
-      }
+      return item !== null ? JSON.parse(item) : initialValue;
     } catch {
-      // localStorage unavailable or JSON parse error
+      return initialValue;
     }
-    setIsLoaded(true);
-  }, [key]);
+  });
 
   const setValue = useCallback((value) => {
     try {
@@ -48,5 +45,5 @@ export function useLocalStorage(key, initialValue) {
     }
   }, [key, initialValue]);
 
-  return [storedValue, setValue, removeValue, isLoaded];
+  return [storedValue, setValue, removeValue];
 }

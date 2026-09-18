@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { FindingsTable } from '@/components/results/FindingsTable';
 import { useAllowlist } from '@/lib/hooks/useCustomRules';
 import { useToast } from '@/components/ui/use-toast';
 import {
-  Shield, ArrowLeft, Download, Share2, EyeOff,
+  Shield, ArrowLeft, Download, EyeOff,
   CheckCircle2, AlertTriangle, RotateCcw
 } from 'lucide-react';
 
@@ -21,20 +21,16 @@ export default function ResultsPage() {
   const { toast } = useToast();
   const { addFingerprint } = useAllowlist();
 
-  const [scanResult, setScanResult] = useState(null);
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  useEffect(() => {
+  const [scanResult, setScanResult] = useState(() => {
+    // Lazy initializer — runs once on mount, safe from setState-in-effect
+    if (typeof window === 'undefined') return null;
     try {
       const stored = sessionStorage.getItem('secretshield_last_scan');
-      if (stored) {
-        setScanResult(JSON.parse(stored));
-      }
+      return stored ? JSON.parse(stored) : null;
     } catch {
-      // parse error
+      return null;
     }
-    setIsLoaded(true);
-  }, []);
+  });
 
   const handleMarkFalsePositive = (finding) => {
     addFingerprint(finding.fingerprint, 'marked as false positive');
@@ -93,13 +89,6 @@ export default function ResultsPage() {
     toast({ title: 'Report exported', description: 'Masked findings exported as JSON.' });
   };
 
-  if (!isLoaded) {
-    return (
-      <div className="min-h-screen bg-grid flex items-center justify-center">
-        <div className="text-muted-foreground text-sm">Loading results…</div>
-      </div>
-    );
-  }
 
   if (!scanResult) {
     return (

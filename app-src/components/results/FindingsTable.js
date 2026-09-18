@@ -18,6 +18,14 @@ import { cn } from '@/lib/utils';
 
 const SEVERITY_ORDER = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
 
+/** Sort indicator icon — declared outside component to avoid static-component lint errors */
+function SortIcon({ field, sortField, sortDir }) {
+  if (sortField !== field) return <ChevronUp className="w-3 h-3 opacity-20" />;
+  return sortDir === 'asc'
+    ? <ChevronUp className="w-3 h-3 text-primary" />
+    : <ChevronDown className="w-3 h-3 text-primary" />;
+}
+
 /**
  * Main findings table with sort, filter, and detail panel.
  */
@@ -71,12 +79,7 @@ export function FindingsTable({ findings = [], isDemo = false, onMarkFalsePositi
     return result;
   }, [findings, search, filterSeverity, sortField, sortDir]);
 
-  function SortIcon({ field }) {
-    if (sortField !== field) return <ChevronUp className="w-3 h-3 opacity-20" />;
-    return sortDir === 'asc'
-      ? <ChevronUp className="w-3 h-3 text-primary" />
-      : <ChevronDown className="w-3 h-3 text-primary" />;
-  }
+
 
   if (findings.length === 0) {
     return (
@@ -126,23 +129,23 @@ export function FindingsTable({ findings = [], isDemo = false, onMarkFalsePositi
             <TableRow className="border-border/50 hover:bg-transparent bg-secondary/30">
               <TableHead className="w-24">
                 <button onClick={() => toggleSort('severity')} className="flex items-center gap-1 text-xs font-semibold">
-                  Severity <SortIcon field="severity" />
+                  Severity <SortIcon field="severity" sortField={sortField} sortDir={sortDir} />
                 </button>
               </TableHead>
               <TableHead className="min-w-40">Secret Type</TableHead>
               <TableHead>
                 <button onClick={() => toggleSort('file')} className="flex items-center gap-1 text-xs font-semibold">
-                  File <SortIcon field="file" />
+                  File <SortIcon field="file" sortField={sortField} sortDir={sortDir} />
                 </button>
               </TableHead>
               <TableHead className="w-16">
                 <button onClick={() => toggleSort('line')} className="flex items-center gap-1 text-xs font-semibold">
-                  Line <SortIcon field="line" />
+                  Line <SortIcon field="line" sortField={sortField} sortDir={sortDir} />
                 </button>
               </TableHead>
               <TableHead className="w-28">
                 <button onClick={() => toggleSort('confidence')} className="flex items-center gap-1 text-xs font-semibold">
-                  Confidence <SortIcon field="confidence" />
+                  Confidence <SortIcon field="confidence" sortField={sortField} sortDir={sortDir} />
                 </button>
               </TableHead>
               <TableHead className="w-20 text-right">Action</TableHead>

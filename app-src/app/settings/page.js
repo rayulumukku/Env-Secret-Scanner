@@ -244,7 +244,7 @@ export default function SettingsPage() {
           <div className="rounded-lg border border-border/30 bg-card/20 p-3 text-xs text-muted-foreground flex items-start gap-2">
             <Shield className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" />
             <span>
-              All settings, history, and allowlists are stored only in your browser's localStorage.
+              All settings, history, and allowlists are stored only in your browser&apos;s localStorage.
               Nothing is ever sent to a server.
             </span>
           </div>
