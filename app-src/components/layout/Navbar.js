@@ -7,10 +7,11 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
 const NAV_LINKS = [
-  { href: '/scan', label: 'Scanner' },
-  { href: '/history', label: 'History' },
-  { href: '/rules', label: 'Rules' },
-  { href: '/docs', label: 'Docs' },
+  { href: '/scan',         label: 'Scanner' },
+  { href: '/repositories', label: 'Repositories' },
+  { href: '/history',      label: 'History' },
+  { href: '/rules',        label: 'Rules' },
+  { href: '/docs',         label: 'Docs' },
 ];
 
 export function Navbar() {
