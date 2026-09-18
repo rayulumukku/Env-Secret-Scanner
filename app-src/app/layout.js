@@ -2,7 +2,7 @@ import './globals.css';
 import { Inter } from 'next/font/google';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
-import { Toaster } from '@/components/ui/toaster';
+import { Toaster } from '@/components/ui/toast';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -67,12 +67,13 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className={`${inter.variable} font-sans bg-background text-foreground min-h-screen flex flex-col`}>
-        <Navbar />
-        <main className="flex-1">
-          {children}
-        </main>
-        <Footer />
-        <Toaster />
+        <Toaster>
+          <Navbar />
+          <main className="flex-1">
+            {children}
+          </main>
+          <Footer />
+        </Toaster>
       </body>
     </html>
   );

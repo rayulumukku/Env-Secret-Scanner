@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import {
   Shield, Zap, Lock, Eye, Code2, Terminal, ArrowRight,
-  CheckCircle, AlertTriangle, Github, Key, Database,
+  CheckCircle, AlertTriangle, Key, Database,
   Cloud, CreditCard, Bot, FileKey, Globe, GitBranch
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ export const metadata = {
 
 const DETECTION_CATEGORIES = [
   { icon: Cloud, label: 'AWS Credentials', desc: 'Access keys, secret keys, session tokens', color: 'text-orange-400' },
-  { icon: Github, label: 'GitHub Tokens', desc: 'PATs, OAuth tokens, App tokens', color: 'text-purple-400' },
+  { icon: GitBranch, label: 'GitHub Tokens', desc: 'PATs, OAuth tokens, App tokens', color: 'text-purple-400' },
   { icon: Bot, label: 'OpenAI Keys', desc: 'Project keys, legacy sk- keys', color: 'text-green-400' },
   { icon: CreditCard, label: 'Stripe Keys', desc: 'Live & test secret keys', color: 'text-blue-400' },
   { icon: Globe, label: 'Google APIs', desc: 'API keys, OAuth secrets, service accounts', color: 'text-red-400' },
