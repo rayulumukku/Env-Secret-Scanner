@@ -609,6 +609,20 @@ export default function RepositoryScanResultPage() {
             </span>
           </div>
           <div className="flex items-center gap-2">
+            <Link
+              href={`/repositories/${scanId}/history`}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-secondary hover:bg-secondary/80 text-foreground transition-colors"
+            >
+              <History className="w-3.5 h-3.5" />
+              History
+            </Link>
+            <Link
+              href={`/repositories/${scanId}/compare`}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-secondary hover:bg-secondary/80 text-foreground transition-colors"
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+              Compare
+            </Link>
             <button
               onClick={() => exportJSON(result)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-secondary hover:bg-secondary/80 text-foreground transition-colors"

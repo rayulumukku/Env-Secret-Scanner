@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "node --test lib/scanner/__tests__/scanner.test.js",
     "test:archive": "node --test lib/repository/__tests__/archive.test.js",
-    "test:all": "node --test lib/scanner/__tests__/scanner.test.js lib/repository/__tests__/archive.test.js",
+    "test:commits": "node --test lib/repository/__tests__/commit-scanner.test.js",
+    "test:all": "node --test lib/scanner/__tests__/scanner.test.js lib/repository/__tests__/archive.test.js lib/repository/__tests__/commit-scanner.test.js",
     "test:watch": "node --test --watch lib/scanner/__tests__/scanner.test.js"
   },
   "dependencies": {

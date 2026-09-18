@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, startTransition } from 'react';
+import { useState, startTransition } from 'react';
 import Link from 'next/link';
 import {
   FolderArchive, Plus, Shield, Clock, FileCode2,
@@ -42,19 +42,17 @@ function formatDate(iso) {
 }
 
 export default function RepositoriesPage() {
-  const [scans, setScans] = useState([]);
+  const [scans, setScans] = useState(() => {
+    try {
+      const raw = typeof localStorage !== 'undefined'
+        ? localStorage.getItem('secretshield_repo_history')
+        : null;
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
   const [query, setQuery] = useState('');
-
-  useEffect(() => {
-    startTransition(() => {
-      try {
-        const raw = localStorage.getItem('secretshield_repo_history');
-        if (raw) setScans(JSON.parse(raw));
-      } catch {
-        setScans([]);
-      }
-    });
-  }, []);
 
   const handleDelete = (scanId) => {
     const updated = scans.filter(s => s.scanId !== scanId);
