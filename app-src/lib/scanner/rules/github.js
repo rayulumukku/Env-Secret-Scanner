@@ -1,110 +1,74 @@
 /**
- * GitHub token detection rules.
- * Detects: Personal Access Tokens (classic and fine-grained), OAuth tokens,
- * GitHub App tokens, refresh tokens.
+ * rules/github.js — GitHub credential detection rules.
+ * Detects: Personal Access Tokens, OAuth tokens, App tokens, fine-grained PATs.
  */
 
-import { maskSecret } from '../masking.js';
-
-const GITHUB_RULES = [
+export const RULES = [
   {
+    id: 'GITHUB_PAT_CLASSIC',
     name: 'GitHub Personal Access Token (Classic)',
     type: 'GITHUB_PAT_CLASSIC',
-    category: 'Version Control',
+    category: 'Source Control',
+    // ghp_ prefix, 36 chars
     pattern: /\bghp_[A-Za-z0-9]{36}\b/g,
     severity: 'CRITICAL',
-    confidence: 99,
-    description: 'GitHub Personal Access Token (classic) detected. Grants broad access to GitHub repositories.',
-    remediation: 'Revoke at github.com/settings/tokens immediately. Audit repository access logs.',
+    isProviderRule: true,
     maskOptions: { showPrefix: 6, showSuffix: 4 },
+    description: 'GitHub classic Personal Access Token. Grants repository and API access.',
+    remediation: 'Revoke at https://github.com/settings/tokens. Rotate affected systems.',
   },
   {
+    id: 'GITHUB_PAT_FINE',
     name: 'GitHub Fine-Grained Personal Access Token',
-    type: 'GITHUB_PAT_FINE_GRAINED',
-    category: 'Version Control',
+    type: 'GITHUB_PAT_FINE',
+    category: 'Source Control',
+    // github_pat_ prefix
     pattern: /\bgithub_pat_[A-Za-z0-9_]{82}\b/g,
     severity: 'CRITICAL',
-    confidence: 99,
-    description: 'GitHub Fine-Grained Personal Access Token detected.',
-    remediation: 'Revoke at github.com/settings/tokens. Fine-grained PATs have specific repo/org scope.',
-    maskOptions: { showPrefix: 11, showSuffix: 4 },
+    isProviderRule: true,
+    maskOptions: { showPrefix: 12, showSuffix: 4 },
+    description: 'GitHub fine-grained Personal Access Token with scoped repository access.',
+    remediation: 'Revoke at https://github.com/settings/tokens and rotate all dependent systems.',
   },
   {
-    name: 'GitHub OAuth Token',
+    id: 'GITHUB_OAUTH_TOKEN',
+    name: 'GitHub OAuth Access Token',
     type: 'GITHUB_OAUTH_TOKEN',
-    category: 'Version Control',
+    category: 'Source Control',
+    // gho_ prefix, 36 chars
     pattern: /\bgho_[A-Za-z0-9]{36}\b/g,
     severity: 'CRITICAL',
-    confidence: 99,
-    description: 'GitHub OAuth access token detected.',
-    remediation: 'Revoke immediately via github.com/settings/applications.',
-    maskOptions: { showPrefix: 5, showSuffix: 4 },
+    isProviderRule: true,
+    maskOptions: { showPrefix: 6, showSuffix: 4 },
+    description: 'GitHub OAuth access token. May grant access to user or organization resources.',
+    remediation: 'Revoke in GitHub OAuth app settings and rotate the token in your application.',
   },
   {
+    id: 'GITHUB_APP_TOKEN',
     name: 'GitHub App Installation Token',
     type: 'GITHUB_APP_TOKEN',
-    category: 'Version Control',
+    category: 'Source Control',
+    // ghs_ prefix, 36 chars
     pattern: /\bghs_[A-Za-z0-9]{36}\b/g,
     severity: 'HIGH',
-    confidence: 97,
-    description: 'GitHub App installation access token detected. Short-lived but still sensitive.',
-    remediation: 'These expire in 1 hour, but regenerate your GitHub App credentials.',
-    maskOptions: { showPrefix: 5, showSuffix: 4 },
+    isProviderRule: true,
+    maskOptions: { showPrefix: 6, showSuffix: 4 },
+    description: 'GitHub App installation access token.',
+    remediation: 'App installation tokens expire but regenerate them and audit for misuse.',
   },
   {
-    name: 'GitHub App Refresh Token',
-    type: 'GITHUB_APP_REFRESH_TOKEN',
-    category: 'Version Control',
+    id: 'GITHUB_REFRESH_TOKEN',
+    name: 'GitHub OAuth Refresh Token',
+    type: 'GITHUB_REFRESH_TOKEN',
+    category: 'Source Control',
+    // ghr_ prefix
     pattern: /\bghr_[A-Za-z0-9]{76}\b/g,
     severity: 'HIGH',
-    confidence: 97,
-    description: 'GitHub App refresh token detected.',
-    remediation: 'Revoke via GitHub App settings. Refresh tokens are long-lived.',
-    maskOptions: { showPrefix: 5, showSuffix: 4 },
+    isProviderRule: true,
+    maskOptions: { showPrefix: 6, showSuffix: 4 },
+    description: 'GitHub OAuth refresh token. Can be used to obtain new access tokens.',
+    remediation: 'Revoke the associated OAuth application token and rotate secrets.',
   },
 ];
 
-/**
- * Detect GitHub tokens in file content.
- *
- * @param {string} content
- * @param {string} filename
- * @returns {object[]}
- */
-export function detect(content, filename) {
-  const findings = [];
-  const lines = content.split('\n');
-
-  for (const rule of GITHUB_RULES) {
-    const regex = new RegExp(rule.pattern.source, rule.pattern.flags);
-    let match;
-
-    while ((match = regex.exec(content)) !== null) {
-      const rawValue = match[0];
-
-      const upToMatch = content.slice(0, match.index);
-      const line = upToMatch.split('\n').length;
-      const lastNewline = upToMatch.lastIndexOf('\n');
-      const column = match.index - lastNewline;
-
-      const maskedValue = maskSecret(rawValue, rule.maskOptions);
-
-      findings.push({
-        type: rule.type,
-        name: rule.name,
-        category: rule.category,
-        severity: rule.severity,
-        confidence: rule.confidence,
-        line,
-        column,
-        file: filename,
-        maskedValue,
-        description: rule.description,
-        remediation: rule.remediation,
-        lineContent: lines[line - 1] || '',
-      });
-    }
-  }
-
-  return findings;
-}
+export { RULES as rules };

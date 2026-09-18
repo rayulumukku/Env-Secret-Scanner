@@ -71,15 +71,25 @@ export function isHighEntropySecret(value, options = {}) {
     return { isHighEntropy: false, entropy: 0, charset: 'path_or_url' };
   }
 
-  // Skip common placeholder values
-  const commonPlaceholders = [
-    'your_api_key', 'your_secret', 'example', 'placeholder',
-    'xxxxxxxx', '00000000', 'test', 'demo', 'sample', 'changeme',
-    'password', 'secret', 'token', 'key',
+  // Skip obvious placeholder values — use exact/prefix match, NOT substring,
+  // to avoid false-positives like AKIAIOSFODNN7EXAMPLE matching "example"
+  const EXACT_PLACEHOLDERS = [
+    'your_api_key', 'your_secret', 'your_token', 'your_password', 'your_key',
+    'placeholder', 'changeme', 'change_me',
+    'xxxxxxxx', 'yyyyyyyy', '00000000', '11111111',
+    'password', 'secret', 'token', 'key', 'demo', 'test',
   ];
   const lower = value.toLowerCase();
-  if (commonPlaceholders.some(p => lower.includes(p))) {
+  // Only exact match OR value starts with the placeholder word followed by _ or -
+  const isExactPlaceholder = EXACT_PLACEHOLDERS.some(p =>
+    lower === p || lower.startsWith(p + '_') || lower.startsWith(p + '-')
+  );
+  if (isExactPlaceholder) {
     return { isHighEntropy: false, entropy: 0, charset: 'placeholder' };
+  }
+  // All-same character
+  if (/^(.)\1{5,}$/.test(value)) {
+    return { isHighEntropy: false, entropy: 0, charset: 'uniform' };
   }
 
   const entropy = shannonEntropy(value);

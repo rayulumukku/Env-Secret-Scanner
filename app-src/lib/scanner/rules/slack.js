@@ -1,108 +1,73 @@
 /**
- * Slack token detection rules.
+ * rules/slack.js — Slack credential detection.
+ * Detects: Bot tokens, User tokens, App tokens, Webhook URLs, signing secrets.
  */
 
-import { maskSecret } from '../masking.js';
-
-const SLACK_RULES = [
+export const RULES = [
   {
+    id: 'SLACK_BOT_TOKEN',
     name: 'Slack Bot Token',
     type: 'SLACK_BOT_TOKEN',
-    category: 'Messaging & Communication',
+    category: 'Messaging',
+    // xoxb- prefix
     pattern: /\bxoxb-[0-9]{10,13}-[0-9]{10,13}-[A-Za-z0-9]{24}\b/g,
-    severity: 'CRITICAL',
-    confidence: 99,
-    description: 'Slack bot token detected. Can read messages, post as the bot, and access workspace data.',
-    remediation: 'Revoke at api.slack.com/apps. Audit bot activity logs for unauthorized access.',
+    severity: 'HIGH',
+    isProviderRule: true,
     maskOptions: { showPrefix: 8, showSuffix: 4 },
+    description: 'Slack bot token detected. Grants API access to your Slack workspace as a bot.',
+    remediation: 'Revoke at https://api.slack.com/apps and regenerate the token.',
   },
   {
+    id: 'SLACK_USER_TOKEN',
     name: 'Slack User Token',
     type: 'SLACK_USER_TOKEN',
-    category: 'Messaging & Communication',
+    category: 'Messaging',
+    // xoxp- prefix
     pattern: /\bxoxp-[0-9]{10,13}-[0-9]{10,13}-[0-9]{10,13}-[A-Za-z0-9]{32}\b/g,
     severity: 'CRITICAL',
-    confidence: 99,
-    description: 'Slack user token detected. Acts on behalf of a real user with their full permissions.',
-    remediation: 'Revoke at api.slack.com/apps. This token has the same access as the user.',
+    isProviderRule: true,
     maskOptions: { showPrefix: 8, showSuffix: 4 },
+    description: 'Slack user token detected. Grants API access on behalf of a user.',
+    remediation: 'Revoke at https://api.slack.com/apps. User tokens have broad permissions.',
   },
   {
+    id: 'SLACK_APP_TOKEN',
     name: 'Slack App-Level Token',
     type: 'SLACK_APP_TOKEN',
-    category: 'Messaging & Communication',
-    pattern: /\bxapp-[0-9]-[A-Za-z0-9]{10,13}-[0-9]{13}-[A-Za-z0-9]{64}\b/g,
+    category: 'Messaging',
+    // xapp- prefix
+    pattern: /\bxapp-\d+-[A-Za-z0-9]+-[A-Za-z0-9]+\b/g,
     severity: 'HIGH',
-    confidence: 97,
-    description: 'Slack app-level token detected. Used for Socket Mode and other app-level APIs.',
-    remediation: 'Revoke at api.slack.com/apps under "App-Level Tokens".',
-    maskOptions: { showPrefix: 6, showSuffix: 4 },
+    isProviderRule: true,
+    maskOptions: { showPrefix: 8, showSuffix: 4 },
+    description: 'Slack app-level token. Used for Socket Mode and app manifest management.',
+    remediation: 'Revoke and regenerate at https://api.slack.com/apps.',
   },
   {
-    name: 'Slack Webhook URL',
-    type: 'SLACK_WEBHOOK',
-    category: 'Messaging & Communication',
-    pattern: /https:\/\/hooks\.slack\.com\/services\/T[A-Za-z0-9_]{8,12}\/B[A-Za-z0-9_]{8,12}\/[A-Za-z0-9_]{24}\b/g,
+    id: 'SLACK_WEBHOOK_URL',
+    name: 'Slack Incoming Webhook URL',
+    type: 'SLACK_WEBHOOK_URL',
+    category: 'Messaging',
+    pattern: /https:\/\/hooks\.slack\.com\/services\/T[A-Z0-9]+\/B[A-Z0-9]+\/[A-Za-z0-9]+/g,
     severity: 'HIGH',
-    confidence: 98,
-    description: 'Slack Incoming Webhook URL detected. Allows posting messages to a channel.',
-    remediation: 'Revoke at api.slack.com/apps under "Incoming Webhooks". Generate a new one.',
+    isProviderRule: true,
     maskOptions: { showPrefix: 40, showSuffix: 4 },
+    description: 'Slack incoming webhook URL. Anyone with this URL can post messages to your workspace.',
+    remediation: 'Revoke the webhook in your Slack app settings and generate a new one.',
   },
   {
-    name: 'Slack Legacy Token',
-    type: 'SLACK_LEGACY_TOKEN',
-    category: 'Messaging & Communication',
-    pattern: /\bxoxa-[0-9]{1,}-[0-9]{1,}-[0-9]{1,}-[A-Za-z0-9]{16,}\b/g,
+    id: 'SLACK_SIGNING_SECRET',
+    name: 'Slack Signing Secret',
+    type: 'SLACK_SIGNING_SECRET',
+    category: 'Messaging',
+    pattern: /(?:slack[_\-]?signing[_\-]?secret|SLACK_SIGNING_SECRET)\s*[=:]\s*["']?([a-f0-9]{32})["']?/gi,
+    captureGroup: 1,
     severity: 'HIGH',
-    confidence: 90,
-    description: 'Slack legacy workspace token detected.',
-    remediation: 'Legacy tokens should be replaced with OAuth flows. Revoke immediately.',
+    isProviderRule: true,
     maskOptions: { showPrefix: 6, showSuffix: 4 },
+    description: 'Slack signing secret. Used to verify Slack requests — exposure allows request forgery.',
+    remediation: 'Rotate the signing secret in your Slack app settings.',
   },
 ];
 
-/**
- * Detect Slack tokens in file content.
- *
- * @param {string} content
- * @param {string} filename
- * @returns {object[]}
- */
-export function detect(content, filename) {
-  const findings = [];
-  const lines = content.split('\n');
-
-  for (const rule of SLACK_RULES) {
-    const regex = new RegExp(rule.pattern.source, rule.pattern.flags);
-    let match;
-
-    while ((match = regex.exec(content)) !== null) {
-      const rawValue = match[0];
-
-      const upToMatch = content.slice(0, match.index);
-      const line = upToMatch.split('\n').length;
-      const lastNewline = upToMatch.lastIndexOf('\n');
-      const column = match.index - lastNewline;
-
-      const maskedValue = maskSecret(rawValue, rule.maskOptions);
-
-      findings.push({
-        type: rule.type,
-        name: rule.name,
-        category: rule.category,
-        severity: rule.severity,
-        confidence: rule.confidence,
-        line,
-        column,
-        file: filename,
-        maskedValue,
-        description: rule.description,
-        remediation: rule.remediation,
-        lineContent: lines[line - 1] || '',
-      });
-    }
-  }
-
-  return findings;
-}
+export { RULES as rules };

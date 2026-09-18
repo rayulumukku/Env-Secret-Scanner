@@ -1,117 +1,86 @@
 /**
- * Database connection string and credential detection rules.
+ * rules/database.js — Database connection string / URL detection.
+ * Detects: PostgreSQL, MySQL, MongoDB, Redis, MSSQL, connection strings with credentials.
  */
 
-import { maskSecret } from '../masking.js';
-
-const DATABASE_RULES = [
+export const RULES = [
   {
-    name: 'PostgreSQL Connection String',
-    type: 'DATABASE_POSTGRES',
+    id: 'DATABASE_POSTGRES_URL',
+    name: 'PostgreSQL Connection URL',
+    type: 'DATABASE_POSTGRES_URL',
     category: 'Database Credentials',
-    pattern: /postgres(?:ql)?:\/\/[^:]+:[^@\s'"]+@[^\s'"]+/gi,
+    // postgresql://user:password@host/db
+    pattern: /postgres(?:ql)?:\/\/[^:@\s]+:[^@\s]{3,}@[^\s"']+/gi,
     severity: 'CRITICAL',
-    confidence: 95,
-    description: 'PostgreSQL connection string with credentials detected.',
-    remediation: 'Rotate database password immediately. Use environment variables or a secrets manager.',
+    isProviderRule: true,
+    maskOptions: { showPrefix: 15, showSuffix: 4 },
+    description: 'PostgreSQL connection URL with embedded credentials.',
+    remediation: 'Move to environment variables. Rotate the database password immediately.',
   },
   {
-    name: 'MySQL Connection String',
-    type: 'DATABASE_MYSQL',
+    id: 'DATABASE_MYSQL_URL',
+    name: 'MySQL Connection URL',
+    type: 'DATABASE_MYSQL_URL',
     category: 'Database Credentials',
-    pattern: /mysql(?:2)?:\/\/[^:]+:[^@\s'"]+@[^\s'"]+/gi,
+    pattern: /mysql(?:2)?:\/\/[^:@\s]+:[^@\s]{3,}@[^\s"']+/gi,
     severity: 'CRITICAL',
-    confidence: 95,
-    description: 'MySQL connection string with credentials detected.',
-    remediation: 'Rotate database password. Audit database access logs for unauthorized queries.',
+    isProviderRule: true,
+    maskOptions: { showPrefix: 12, showSuffix: 4 },
+    description: 'MySQL connection URL with embedded credentials.',
+    remediation: 'Move to environment variables. Rotate the database password.',
   },
   {
-    name: 'MongoDB Connection String',
-    type: 'DATABASE_MONGODB',
+    id: 'DATABASE_MONGODB_URL',
+    name: 'MongoDB Connection URL',
+    type: 'DATABASE_MONGODB_URL',
     category: 'Database Credentials',
-    pattern: /mongodb(?:\+srv)?:\/\/[^:]+:[^@\s'"]+@[^\s'"]+/gi,
+    pattern: /mongodb(?:\+srv)?:\/\/[^:@\s]+:[^@\s]{3,}@[^\s"']+/gi,
     severity: 'CRITICAL',
-    confidence: 95,
-    description: 'MongoDB connection string with credentials detected.',
-    remediation: 'Rotate credentials in MongoDB Atlas/console. Check for unauthorized database access.',
+    isProviderRule: true,
+    maskOptions: { showPrefix: 14, showSuffix: 4 },
+    description: 'MongoDB connection URL with embedded credentials.',
+    remediation: 'Move to environment variables. Rotate MongoDB Atlas or self-hosted credentials.',
   },
   {
-    name: 'Redis Connection String',
-    type: 'DATABASE_REDIS',
+    id: 'DATABASE_REDIS_URL',
+    name: 'Redis Connection URL',
+    type: 'DATABASE_REDIS_URL',
     category: 'Database Credentials',
-    pattern: /redis(?:s)?:\/\/[^:]*:[^@\s'"]+@[^\s'"]+/gi,
+    // redis://:password@host or redis://user:password@host
+    pattern: /redis(?:s)?:\/\/(?:[^:@\s]+:)?[^@\s]{3,}@[^\s"']+/gi,
     severity: 'HIGH',
-    confidence: 90,
-    description: 'Redis connection string with password detected.',
-    remediation: 'Rotate the Redis AUTH password. Redis exposure can lead to data theft or server compromise.',
+    isProviderRule: true,
+    maskOptions: { showPrefix: 10, showSuffix: 4 },
+    description: 'Redis connection URL with embedded password.',
+    remediation: 'Move to environment variables. Rotate the Redis password.',
   },
   {
-    name: 'SQL Server Connection String',
-    type: 'DATABASE_MSSQL',
+    id: 'DATABASE_MSSQL_URL',
+    name: 'MSSQL Connection String',
+    type: 'DATABASE_MSSQL_URL',
     category: 'Database Credentials',
-    pattern: /(?:Server|Data Source)\s*=\s*[^;]+;\s*(?:Database|Initial Catalog)\s*=\s*[^;]+;\s*(?:User Id|UID)\s*=\s*[^;]+;\s*Password\s*=\s*([^;'"]+)/gi,
+    pattern: /(?:mssql|sqlserver):\/\/[^:@\s]+:[^@\s]{3,}@[^\s"']+/gi,
     severity: 'CRITICAL',
-    confidence: 88,
-    description: 'SQL Server connection string with credentials detected.',
-    remediation: 'Rotate SQL Server credentials. Use Windows Authentication where possible.',
+    isProviderRule: true,
+    maskOptions: { showPrefix: 12, showSuffix: 4 },
+    description: 'Microsoft SQL Server connection string with embedded credentials.',
+    remediation: 'Move to environment variables. Rotate SQL Server credentials.',
+  },
+  {
+    id: 'DATABASE_GENERIC_PASSWORD',
+    name: 'Database Password Assignment',
+    type: 'DATABASE_GENERIC_PASSWORD',
+    category: 'Database Credentials',
+    // DB_PASSWORD = "something" or db-password: "something"
+    pattern: /(?:db[_\-]?password|database[_\-]?password|db[_\-]?pass(?:word)?)\s*[=:]\s*["']([^"'\s]{6,})["']/gi,
     captureGroup: 1,
-  },
-  {
-    name: 'Generic Database URL',
-    type: 'DATABASE_URL_GENERIC',
-    category: 'Database Credentials',
-    // Catches things like DATABASE_URL=something with credentials
-    pattern: /(?:DATABASE_URL|DB_URL|DATABASE_URI|DB_URI|CONNECTION_STRING)\s*[=:]\s*["']?[a-z]+:\/\/[^:]+:[^@\s'"]{4,}@[^\s'"]+["']?/gi,
     severity: 'CRITICAL',
-    confidence: 85,
-    description: 'Database URL environment variable with embedded credentials detected.',
-    remediation: 'Never embed credentials in URLs. Use environment variables with a secrets manager.',
+    isProviderRule: false,
+    entropyThreshold: 2.5,
+    maskOptions: { showPrefix: 4, showSuffix: 4 },
+    description: 'Database password assigned in source code.',
+    remediation: 'Move to environment variables or secrets manager. Rotate the password.',
   },
 ];
 
-/**
- * Detect database credentials in file content.
- *
- * @param {string} content
- * @param {string} filename
- * @returns {object[]}
- */
-export function detect(content, filename) {
-  const findings = [];
-  const lines = content.split('\n');
-
-  for (const rule of DATABASE_RULES) {
-    const regex = new RegExp(rule.pattern.source, rule.pattern.flags);
-    let match;
-
-    while ((match = regex.exec(content)) !== null) {
-      const rawValue = match[0];
-
-      const upToMatch = content.slice(0, match.index);
-      const line = upToMatch.split('\n').length;
-      const lastNewline = upToMatch.lastIndexOf('\n');
-      const column = match.index - lastNewline;
-
-      // For connection strings, mask the password portion
-      // Pattern: protocol://user:PASSWORD@host/db
-      const maskedValue = rawValue.replace(/:([^@]{4,})@/, ':••••••••@');
-
-      findings.push({
-        type: rule.type,
-        name: rule.name,
-        category: rule.category,
-        severity: rule.severity,
-        confidence: rule.confidence,
-        line,
-        column,
-        file: filename,
-        maskedValue: maskedValue.length > 80 ? maskedValue.slice(0, 77) + '...' : maskedValue,
-        description: rule.description,
-        remediation: rule.remediation,
-        lineContent: lines[line - 1] || '',
-      });
-    }
-  }
-
-  return findings;
-}
+export { RULES as rules };

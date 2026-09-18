@@ -1,67 +1,117 @@
 /**
- * Main scanner engine.
- * Orchestrates all detection rules and returns structured, masked results.
+ * engine.js — Main scanner engine.
  *
- * SECURITY: This module NEVER logs raw secret values to the console.
- * All findings are masked before being returned.
+ * Pipeline per file:
+ *   1. File filtering (skip binary, excluded dirs, oversized)
+ *   2. Provider-specific rules
+ *   3. Generic rules
+ *   4. Custom rules
+ *   5. Deduplication
+ *   6. Allowlist filtering
+ *   7. Sort by severity + confidence
+ *
+ * SECURITY:
+ *   - Raw secret values never leave the detector module.
+ *   - No raw secrets are logged, stored, or returned.
+ *   - All findings contain only maskedValue.
  */
 
-import { detect as detectAWS } from './rules/aws.js';
-import { detect as detectGitHub } from './rules/github.js';
-import { detect as detectOpenAI } from './rules/openai.js';
-import { detect as detectStripe } from './rules/stripe.js';
-import { detect as detectGoogle } from './rules/google.js';
-import { detect as detectSlack } from './rules/slack.js';
-import { detect as detectJWT } from './rules/jwt.js';
-import { detect as detectPrivateKey } from './rules/private-key.js';
-import { detect as detectDatabase } from './rules/database.js';
-import { detect as detectGeneric } from './rules/generic.js';
+import { RULES as awsRules }          from './rules/aws.js';
+import { RULES as githubRules }        from './rules/github.js';
+import { RULES as openaiRules }        from './rules/openai.js';
+import { RULES as stripeRules }        from './rules/stripe.js';
+import { RULES as googleRules }        from './rules/google.js';
+import { RULES as slackRules }         from './rules/slack.js';
+import { RULES as jwtRules }           from './rules/jwt.js';
+import { RULES as privateKeyRules }    from './rules/private-key.js';
+import { RULES as databaseRules }      from './rules/database.js';
+import { RULES as npmRules }           from './rules/npm.js';
+import { RULES as bearerRules }        from './rules/bearer-token.js';
+import { RULES as genericApiKeyRules } from './rules/generic-api-key.js';
+import { RULES as genericPasswordRules } from './rules/generic-password.js';
+
+import { runRules }                    from './detector.js';
 import { createFingerprint, deduplicateFindings } from './fingerprint.js';
+import { shouldScanFile }              from './file-filter.js';
+import { maskSecret, maskSecretInLine } from './masking.js';
 
 /** Severity order for sorting */
 const SEVERITY_ORDER = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
 
-/** All built-in detection rule runners */
-const BUILT_IN_RULES = [
-  detectAWS,
-  detectGitHub,
-  detectOpenAI,
-  detectStripe,
-  detectGoogle,
-  detectSlack,
-  detectJWT,
-  detectPrivateKey,
-  detectDatabase,
-  detectGeneric,
+/** All provider-specific rule sets (run first) */
+const PROVIDER_RULES = [
+  ...awsRules,
+  ...githubRules,
+  ...openaiRules,
+  ...stripeRules,
+  ...googleRules,
+  ...slackRules,
+  ...jwtRules,
+  ...privateKeyRules,
+  ...databaseRules,
+  ...npmRules,
 ];
+
+/** Generic / lower-specificity rules (run second) */
+const GENERIC_RULES = [
+  ...bearerRules,
+  ...genericApiKeyRules,
+  ...genericPasswordRules,
+];
+
+/** All rules combined */
+const ALL_BUILTIN_RULES = [...PROVIDER_RULES, ...GENERIC_RULES];
+
+// ── ID GENERATOR ────────────────────────────────────────────────────────────
+
+let _idCounter = 0;
+function generateFindingId() {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let id = 'f_';
+  for (let i = 0; i < 6; i++) id += chars[Math.floor(Math.random() * chars.length)];
+  return `${id}_${++_idCounter}`;
+}
+
+function generateScanId() {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let id = 'scan_';
+  for (let i = 0; i < 8; i++) id += chars[Math.floor(Math.random() * chars.length)];
+  return id;
+}
+
+// ── FILENAME SANITIZER ──────────────────────────────────────────────────────
 
 /**
  * Sanitize a filename to prevent path traversal.
+ * Preserves path structure but strips .. components.
  * @param {string} filename
  * @returns {string}
  */
 function sanitizeFilename(filename) {
   if (!filename || typeof filename !== 'string') return 'unknown';
-  // Keep only the basename, strip directory traversal
   return filename
     .replace(/\.\.\//g, '')
     .replace(/\.\.\\/g, '')
     .replace(/^[/\\]+/, '')
     .split(/[/\\]/)
-    .pop() || 'unknown';
+    .filter(p => p && p !== '..') // remove any remaining .. components
+    .join('/') || 'unknown';
 }
 
+// ── CUSTOM RULE RUNNER ──────────────────────────────────────────────────────
+
 /**
- * Apply custom rules (from user's rule definitions) to content.
+ * Apply user-defined custom rules to file content.
+ * SECURITY: Never log or store rawValue outside this function.
  *
  * @param {string} content
  * @param {string} filename
  * @param {object[]} customRules
- * @returns {object[]}
+ * @returns {object[]} findings
  */
 function applyCustomRules(content, filename, customRules) {
   const findings = [];
-  if (!customRules || !Array.isArray(customRules)) return findings;
+  if (!Array.isArray(customRules) || customRules.length === 0) return findings;
 
   const lines = content.split('\n');
 
@@ -72,32 +122,36 @@ function applyCustomRules(content, filename, customRules) {
     try {
       regex = new RegExp(rule.pattern, 'g');
     } catch {
-      // Invalid regex — skip silently
-      continue;
+      continue; // Invalid regex
     }
 
     let match;
+    const start = Date.now();
     try {
-      // Safety: limit execution to prevent ReDoS via timeout simulation
-      const startTime = Date.now();
       while ((match = regex.exec(content)) !== null) {
-        if (Date.now() - startTime > 5000) break; // 5s timeout
+        if (Date.now() - start > 5000) break; // ReDoS guard
 
         const rawValue = match[0];
-        if (!rawValue) continue;
+        if (!rawValue || rawValue.length < 4) continue;
 
         const upToMatch = content.slice(0, match.index);
-        const line = upToMatch.split('\n').length;
+        const lineIdx = upToMatch.split('\n').length - 1;
         const lastNewline = upToMatch.lastIndexOf('\n');
         const column = match.index - lastNewline;
+        const line = lineIdx + 1;
 
-        // Mask the matched value
+        // SECURITY: mask immediately
         const len = rawValue.length;
         const maskedValue = len <= 8
           ? '•'.repeat(Math.min(len, 8))
           : rawValue.slice(0, 4) + '•'.repeat(Math.min(len - 8, 12)) + rawValue.slice(-4);
 
+        const lineText = lines[lineIdx] || '';
+        const maskedLineText = maskSecretInLine(lineText, rawValue);
+
         findings.push({
+          id: generateFindingId(),
+          ruleId: `CUSTOM_${rule.id || 'RULE'}`,
           type: `CUSTOM_${rule.id || 'RULE'}`,
           name: rule.name || 'Custom Rule',
           category: rule.category || 'Custom',
@@ -108,110 +162,112 @@ function applyCustomRules(content, filename, customRules) {
           file: filename,
           maskedValue,
           description: rule.description || 'Custom rule match.',
-          remediation: 'Review this finding according to your organization\'s security policy.',
-          lineContent: lines[line - 1] || '',
+          remediation: 'Review according to your organization\'s security policy.',
+          signals: [{ label: 'Custom rule match', score: 75, positive: true }],
+          lineTextMasked: maskedLineText,
+          contextLines: [],
           isCustomRule: true,
           customRuleId: rule.id,
         });
       }
     } catch {
-      // Regex execution error — skip
+      // regex execution error
     }
   }
 
   return findings;
 }
 
+// ── SINGLE FILE SCAN ────────────────────────────────────────────────────────
+
 /**
- * Scan a single file's content.
+ * Scan a single file's content through the full pipeline.
  *
- * @param {string} content - raw file content (untrusted)
- * @param {string} filename - sanitized filename
- * @param {object[]} customRules - user-defined rules
- * @param {string[]} allowlistFingerprints - fingerprints to ignore
- * @returns {object[]} masked findings
+ * @param {string} content
+ * @param {string} filename - already sanitized
+ * @param {object[]} customRules
+ * @param {string[]} allowlistFingerprints
+ * @returns {{ findings: object[], skipped: false } | { skipped: true, reason: string }}
  */
 function scanFile(content, filename, customRules = [], allowlistFingerprints = []) {
-  const allFindings = [];
-
-  // Run all built-in rules
-  for (const ruleRunner of BUILT_IN_RULES) {
-    try {
-      const results = ruleRunner(content, filename);
-      if (Array.isArray(results)) allFindings.push(...results);
-    } catch {
-      // Rule execution error — continue with others
-    }
+  // File filter check
+  const filterResult = shouldScanFile({ name: filename, content });
+  if (filterResult.skip) {
+    return { skipped: true, reason: filterResult.reason };
   }
+
+  // Run all built-in rules through the unified detector
+  let allFindings = runRules(ALL_BUILTIN_RULES, content, filename);
 
   // Run custom rules
   const customFindings = applyCustomRules(content, filename, customRules);
-  allFindings.push(...customFindings);
+  allFindings = [...allFindings, ...customFindings];
 
-  // Add fingerprints
-  const withFingerprints = allFindings.map(finding => ({
+  // Assign IDs and fingerprints
+  allFindings = allFindings.map(finding => ({
     ...finding,
+    id: finding.id || generateFindingId(),
     fingerprint: createFingerprint(finding),
   }));
 
   // Deduplicate
-  const deduplicated = deduplicateFindings(withFingerprints);
+  const deduplicated = deduplicateFindings(allFindings);
 
-  // Filter allowlisted
-  const filtered = deduplicated.filter(
-    f => !allowlistFingerprints.includes(f.fingerprint)
-  );
+  // Separate active vs allowlisted
+  const active = deduplicated.filter(f => !allowlistFingerprints.includes(f.fingerprint));
+  const allowlisted = deduplicated
+    .filter(f => allowlistFingerprints.includes(f.fingerprint))
+    .map(f => ({ ...f, isAllowlisted: true }));
 
-  // Mark allowlisted ones separately
-  const allowlisted = deduplicated.filter(
-    f => allowlistFingerprints.includes(f.fingerprint)
-  ).map(f => ({ ...f, isAllowlisted: true }));
-
-  return [...filtered, ...allowlisted];
+  return { findings: [...active, ...allowlisted], skipped: false };
 }
 
+// ── MAIN SCAN FUNCTION ──────────────────────────────────────────────────────
+
 /**
- * Main scan function.
+ * Main scan entry point.
  *
  * @param {object} options
- * @param {Array<{name: string, content: string}>} options.files - files to scan
- * @param {object[]} options.customRules - user-defined rules
- * @param {string[]} options.allowlistFingerprints - fingerprints to ignore
- * @param {string[]} options.allowlistFiles - filenames to skip entirely
- * @returns {object} scan results
+ * @param {Array<{name:string, content:string}>} options.files
+ * @param {object[]} options.customRules
+ * @param {string[]} options.allowlistFingerprints
+ * @param {string[]} options.allowlistFiles
+ * @returns {object} scan result
  */
 export function scan({ files = [], customRules = [], allowlistFingerprints = [], allowlistFiles = [] }) {
   const startTime = Date.now();
   const allFindings = [];
   const scannedFiles = [];
   const errors = [];
+  const skippedFiles = [];
 
   for (const file of files) {
-    const filename = sanitizeFilename(file.name);
+    const filename = sanitizeFilename(file.name || 'unknown');
 
-    // Skip allowlisted files
+    // Skip explicitly allowlisted files
     if (allowlistFiles.includes(filename)) {
-      scannedFiles.push({ name: filename, skipped: true, reason: 'allowlisted' });
+      skippedFiles.push({ name: filename, reason: 'allowlisted' });
       continue;
     }
 
     try {
-      const findings = scanFile(
-        file.content,
-        filename,
-        customRules,
-        allowlistFingerprints
-      );
-      allFindings.push(...findings);
-      scannedFiles.push({ name: filename, findings: findings.length });
+      const result = scanFile(file.content, filename, customRules, allowlistFingerprints);
+
+      if (result.skipped) {
+        skippedFiles.push({ name: filename, reason: result.reason });
+        continue;
+      }
+
+      allFindings.push(...result.findings);
+      scannedFiles.push({ name: filename, findings: result.findings.length });
     } catch {
-      // SECURITY: Do not include file content in error messages
+      // SECURITY: never include file content in error messages
       errors.push({ file: filename, error: 'Failed to scan file' });
       scannedFiles.push({ name: filename, error: true });
     }
   }
 
-  // Sort by severity then confidence
+  // Sort: severity first, then confidence descending
   allFindings.sort((a, b) => {
     const sevDiff = (SEVERITY_ORDER[a.severity] ?? 4) - (SEVERITY_ORDER[b.severity] ?? 4);
     if (sevDiff !== 0) return sevDiff;
@@ -220,34 +276,34 @@ export function scan({ files = [], customRules = [], allowlistFingerprints = [],
 
   const active = allFindings.filter(f => !f.isAllowlisted);
   const allowlisted = allFindings.filter(f => f.isAllowlisted);
+  const duration = Date.now() - startTime;
 
-  const stats = {
+  const statistics = {
     filesScanned: scannedFiles.length,
+    filesSkipped: skippedFiles.length,
     totalFindings: active.length,
     critical: active.filter(f => f.severity === 'CRITICAL').length,
     high: active.filter(f => f.severity === 'HIGH').length,
     medium: active.filter(f => f.severity === 'MEDIUM').length,
     low: active.filter(f => f.severity === 'LOW').length,
     allowlisted: allowlisted.length,
-    duration: Date.now() - startTime,
+    duration,
+    rulesRan: ALL_BUILTIN_RULES.length,
   };
 
   return {
-    id: generateScanId(),
+    scanId: generateScanId(),
+    status: 'completed',
     timestamp: new Date().toISOString(),
-    stats,
+    duration,
+    filesScanned: scannedFiles.length,
+    statistics,
+    // Keep stats as alias for backwards compat with existing UI
+    stats: statistics,
     findings: active,
     allowlistedFindings: allowlisted,
     scannedFiles,
+    skippedFiles,
     errors,
   };
-}
-
-function generateScanId() {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  let id = 'scan_';
-  for (let i = 0; i < 8; i++) {
-    id += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return id;
 }

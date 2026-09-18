@@ -1,86 +1,46 @@
 /**
- * OpenAI API key detection rules.
+ * rules/openai.js — OpenAI API key detection.
  */
 
-import { maskSecret } from '../masking.js';
-
-const OPENAI_RULES = [
+export const RULES = [
   {
-    name: 'OpenAI API Key (Project)',
-    type: 'OPENAI_PROJECT_KEY',
-    category: 'AI/ML Services',
-    pattern: /\bsk-proj-[A-Za-z0-9_\-]{40,100}\b/g,
+    id: 'OPENAI_API_KEY_PROJECT',
+    name: 'OpenAI Project API Key',
+    type: 'OPENAI_API_KEY_PROJECT',
+    category: 'AI Services',
+    // sk-proj- prefix, 48+ chars
+    pattern: /\bsk-proj-[A-Za-z0-9\-_]{48,}\b/g,
     severity: 'CRITICAL',
-    confidence: 99,
-    description: 'OpenAI project-scoped API key detected. Can be used to make paid API calls.',
-    remediation: 'Revoke at platform.openai.com/api-keys. Check usage dashboard for unauthorized charges.',
-    maskOptions: { showPrefix: 8, showSuffix: 4 },
+    isProviderRule: true,
+    maskOptions: { showPrefix: 10, showSuffix: 4 },
+    description: 'OpenAI project-scoped API key. Grants access to OpenAI APIs and incurs billing.',
+    remediation: 'Revoke at https://platform.openai.com/api-keys and rotate all dependent systems.',
   },
   {
+    id: 'OPENAI_API_KEY_LEGACY',
     name: 'OpenAI API Key (Legacy)',
-    type: 'OPENAI_LEGACY_KEY',
-    category: 'AI/ML Services',
-    pattern: /\bsk-[A-Za-z0-9]{48}\b/g,
+    type: 'OPENAI_API_KEY_LEGACY',
+    category: 'AI Services',
+    // sk- prefix, not sk-proj, 48 chars
+    pattern: /\bsk-(?!proj-)[A-Za-z0-9]{48}\b/g,
     severity: 'CRITICAL',
-    confidence: 95,
-    description: 'OpenAI API key detected. Grants access to GPT models and may incur billing.',
-    remediation: 'Revoke at platform.openai.com/api-keys immediately.',
+    isProviderRule: true,
     maskOptions: { showPrefix: 5, showSuffix: 4 },
+    description: 'OpenAI legacy API key. Grants full access to OpenAI APIs.',
+    remediation: 'Revoke at https://platform.openai.com/api-keys and replace with project-scoped keys.',
   },
   {
-    name: 'OpenAI Organization ID',
-    type: 'OPENAI_ORG_ID',
-    category: 'AI/ML Services',
-    pattern: /\borg-[A-Za-z0-9]{24}\b/g,
-    severity: 'LOW',
-    confidence: 70,
-    description: 'OpenAI Organization ID detected. Not a secret by itself but should not be exposed.',
-    remediation: 'Remove from source code. Use environment variables.',
-    maskOptions: { showPrefix: 5, showSuffix: 4 },
+    id: 'OPENAI_ORG_KEY',
+    name: 'OpenAI Organization Key',
+    type: 'OPENAI_ORG_KEY',
+    category: 'AI Services',
+    pattern: /\bsk-org-[A-Za-z0-9\-_]{32,}\b/g,
+    severity: 'CRITICAL',
+    isProviderRule: true,
+    maskOptions: { showPrefix: 8, showSuffix: 4 },
+    description: 'OpenAI organization-level API key.',
+    remediation: 'Revoke immediately at https://platform.openai.com/api-keys.',
   },
 ];
 
-/**
- * Detect OpenAI credentials in file content.
- *
- * @param {string} content
- * @param {string} filename
- * @returns {object[]}
- */
-export function detect(content, filename) {
-  const findings = [];
-  const lines = content.split('\n');
-
-  for (const rule of OPENAI_RULES) {
-    const regex = new RegExp(rule.pattern.source, rule.pattern.flags);
-    let match;
-
-    while ((match = regex.exec(content)) !== null) {
-      const rawValue = match[0];
-
-      const upToMatch = content.slice(0, match.index);
-      const line = upToMatch.split('\n').length;
-      const lastNewline = upToMatch.lastIndexOf('\n');
-      const column = match.index - lastNewline;
-
-      const maskedValue = maskSecret(rawValue, rule.maskOptions);
-
-      findings.push({
-        type: rule.type,
-        name: rule.name,
-        category: rule.category,
-        severity: rule.severity,
-        confidence: rule.confidence,
-        line,
-        column,
-        file: filename,
-        maskedValue,
-        description: rule.description,
-        remediation: rule.remediation,
-        lineContent: lines[line - 1] || '',
-      });
-    }
-  }
-
-  return findings;
-}
+export { RULES as rules };

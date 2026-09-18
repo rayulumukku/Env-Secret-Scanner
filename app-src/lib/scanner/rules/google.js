@@ -1,100 +1,62 @@
 /**
- * Google API key and credential detection rules.
+ * rules/google.js — Google API credential detection.
+ * Detects: API keys, OAuth client secrets, service account keys.
  */
 
-import { maskSecret } from '../masking.js';
-
-const GOOGLE_RULES = [
+export const RULES = [
   {
+    id: 'GOOGLE_API_KEY',
     name: 'Google API Key',
     type: 'GOOGLE_API_KEY',
     category: 'Cloud Credentials',
-    pattern: /\bAIza[0-9A-Za-z\-_]{35}\b/g,
+    // AIza prefix, 39 chars total
+    pattern: /\bAIza[A-Za-z0-9\-_]{35}\b/g,
     severity: 'HIGH',
-    confidence: 97,
-    description: 'Google API key detected. May grant access to Maps, Firebase, Cloud APIs, etc.',
-    remediation: 'Restrict at console.cloud.google.com/apis/credentials. Regenerate if exposed.',
+    isProviderRule: true,
     maskOptions: { showPrefix: 8, showSuffix: 4 },
+    description: 'Google API key detected. May grant access to Google Cloud APIs.',
+    remediation: 'Restrict the key to specific APIs and IPs in Google Cloud Console. Rotate if exposed.',
   },
   {
-    name: 'Google OAuth Client ID',
-    type: 'GOOGLE_OAUTH_CLIENT_ID',
-    category: 'Cloud Credentials',
-    pattern: /[0-9]+-[0-9A-Za-z_]{32}\.apps\.googleusercontent\.com/g,
-    severity: 'MEDIUM',
-    confidence: 90,
-    description: 'Google OAuth Client ID detected. Not a secret but reveals app identity.',
-    remediation: 'Less sensitive, but rotate the associated client secret immediately.',
-    maskOptions: { showPrefix: 10, showSuffix: 8 },
-  },
-  {
+    id: 'GOOGLE_OAUTH_CLIENT_SECRET',
     name: 'Google OAuth Client Secret',
     type: 'GOOGLE_OAUTH_CLIENT_SECRET',
     category: 'Cloud Credentials',
-    pattern: /(?:client[_-]?secret|GOOGLE[_-]CLIENT[_-]SECRET)\s*[=:]\s*["']?([A-Za-z0-9\-_]{24,})["']?/gi,
+    // GOCSPX- prefix
+    pattern: /\bGOCSPX-[A-Za-z0-9\-_]{28}\b/g,
     severity: 'CRITICAL',
-    confidence: 88,
-    description: 'Google OAuth client secret detected. Allows impersonation of your OAuth app.',
-    remediation: 'Regenerate at console.cloud.google.com/apis/credentials immediately.',
-    maskOptions: { showPrefix: 6, showSuffix: 4 },
-    captureGroup: 1,
+    isProviderRule: true,
+    maskOptions: { showPrefix: 8, showSuffix: 4 },
+    description: 'Google OAuth client secret. Can be used to impersonate your OAuth application.',
+    remediation: 'Regenerate the client secret in Google Cloud Console OAuth credentials.',
   },
   {
-    name: 'Google Service Account JSON',
-    type: 'GOOGLE_SERVICE_ACCOUNT',
+    id: 'GOOGLE_SERVICE_ACCOUNT_KEY',
+    name: 'Google Service Account Key',
+    type: 'GOOGLE_SERVICE_ACCOUNT_KEY',
     category: 'Cloud Credentials',
-    // Match service account key JSON fragments
-    pattern: /"type"\s*:\s*"service_account"/g,
+    // Service account JSON contains "private_key_id"
+    pattern: /"private_key_id"\s*:\s*"([A-Za-z0-9]{40})"/g,
+    captureGroup: 1,
     severity: 'CRITICAL',
-    confidence: 95,
-    description: 'Google Service Account JSON key detected. Grants broad access to GCP services.',
-    remediation: 'Delete the key at console.cloud.google.com/iam-admin/serviceaccounts. Audit GCP audit logs.',
-    maskOptions: { showPrefix: 4, showSuffix: 4 },
+    isProviderRule: true,
+    maskOptions: { showPrefix: 8, showSuffix: 4 },
+    description: 'Google service account key ID detected in JSON. Full key may be present.',
+    remediation: 'Revoke the service account key in Google Cloud IAM and generate a new one.',
+  },
+  {
+    id: 'GOOGLE_REFRESH_TOKEN',
+    name: 'Google OAuth Refresh Token',
+    type: 'GOOGLE_REFRESH_TOKEN',
+    category: 'Cloud Credentials',
+    // 1// prefix, long alphanumeric+dash
+    pattern: /\b1\/\/[A-Za-z0-9\-_]{40,}\b/g,
+    severity: 'HIGH',
+    isProviderRule: true,
+    maskOptions: { showPrefix: 6, showSuffix: 4 },
+    description: 'Google OAuth refresh token. Can generate new access tokens indefinitely.',
+    remediation: 'Revoke at https://myaccount.google.com/permissions and regenerate tokens.',
   },
 ];
 
-/**
- * Detect Google API keys and credentials in file content.
- *
- * @param {string} content
- * @param {string} filename
- * @returns {object[]}
- */
-export function detect(content, filename) {
-  const findings = [];
-  const lines = content.split('\n');
-
-  for (const rule of GOOGLE_RULES) {
-    const regex = new RegExp(rule.pattern.source, rule.pattern.flags);
-    let match;
-
-    while ((match = regex.exec(content)) !== null) {
-      const rawValue = rule.captureGroup ? match[rule.captureGroup] : match[0];
-      if (!rawValue) continue;
-
-      const upToMatch = content.slice(0, match.index);
-      const line = upToMatch.split('\n').length;
-      const lastNewline = upToMatch.lastIndexOf('\n');
-      const column = match.index - lastNewline;
-
-      const maskedValue = maskSecret(rawValue, rule.maskOptions);
-
-      findings.push({
-        type: rule.type,
-        name: rule.name,
-        category: rule.category,
-        severity: rule.severity,
-        confidence: rule.confidence,
-        line,
-        column,
-        file: filename,
-        maskedValue,
-        description: rule.description,
-        remediation: rule.remediation,
-        lineContent: lines[line - 1] || '',
-      });
-    }
-  }
-
-  return findings;
-}
+export { RULES as rules };

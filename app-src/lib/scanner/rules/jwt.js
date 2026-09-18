@@ -1,108 +1,43 @@
 /**
- * JWT (JSON Web Token) detection rules.
+ * rules/jwt.js — JSON Web Token detection.
+ * JWTs have 3 base64url-encoded segments separated by dots.
+ * We validate structure rather than just matching the pattern.
  */
 
-import { maskSecret } from '../masking.js';
-import { shannonEntropy } from '../entropy.js';
-
-// JWT pattern: three base64url-encoded segments separated by dots
-const JWT_PATTERN = /\beyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\b/g;
-
-/**
- * Attempt to determine JWT severity based on its contents.
- * We only look at the header (first segment) which is not sensitive.
- *
- * @param {string} token
- * @returns {{ severity, confidence, details }}
- */
-function analyzeJWT(token) {
+/** Try to decode a JWT header to confirm it looks real */
+function isRealJWT(token) {
   try {
-    const [headerB64] = token.split('.');
-    // Pad base64url to standard base64
-    const padded = headerB64.replace(/-/g, '+').replace(/_/g, '/');
-    const padding = (4 - (padded.length % 4)) % 4;
-    const base64 = padded + '='.repeat(padding);
-
-    let header;
-    if (typeof Buffer !== 'undefined') {
-      header = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));
-    } else {
-      header = JSON.parse(atob(base64));
-    }
-
-    const alg = header.alg || '';
-    const typ = header.typ || '';
-
-    // None algorithm = dangerous
-    if (alg.toLowerCase() === 'none') {
-      return {
-        severity: 'CRITICAL',
-        confidence: 95,
-        details: 'JWT uses "none" algorithm — authentication bypass possible',
-      };
-    }
-
-    if (alg.startsWith('RS') || alg.startsWith('ES')) {
-      return { severity: 'HIGH', confidence: 88, details: `JWT with ${alg} algorithm` };
-    }
-
-    return { severity: 'MEDIUM', confidence: 80, details: `JWT with ${alg} algorithm` };
+    const parts = token.split('.');
+    if (parts.length !== 3) return false;
+    // Attempt to decode the header
+    const header = parts[0].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = header + '==='.slice(0, (4 - header.length % 4) % 4);
+    const decoded = atob(padded);
+    const parsed = JSON.parse(decoded);
+    // Must have alg field
+    return parsed && typeof parsed.alg === 'string';
   } catch {
-    return { severity: 'MEDIUM', confidence: 70, details: 'JWT token detected' };
+    return false;
   }
 }
 
-/**
- * Detect JWTs in file content.
- *
- * @param {string} content
- * @param {string} filename
- * @returns {object[]}
- */
-export function detect(content, filename) {
-  const findings = [];
-  const lines = content.split('\n');
+export const RULES = [
+  {
+    id: 'JWT_TOKEN',
+    name: 'JSON Web Token (JWT)',
+    type: 'JWT_TOKEN',
+    category: 'Authentication Tokens',
+    // 3 dot-separated base64url segments
+    pattern: /\beyJ[A-Za-z0-9\-_]+\.eyJ[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_.+/=]+\b/g,
+    severity: 'HIGH',
+    isProviderRule: false,
+    entropyThreshold: 4.0,
+    maskOptions: { showPrefix: 12, showSuffix: 4 },
+    description: 'Hardcoded JWT detected. JWTs may contain user identity and authorization claims.',
+    remediation: 'Never hardcode JWTs. Tokens should be generated dynamically and stored securely (httpOnly cookies or secure storage).',
+    // Custom validator used in engine
+    validate: isRealJWT,
+  },
+];
 
-  const regex = new RegExp(JWT_PATTERN.source, JWT_PATTERN.flags);
-  let match;
-
-  while ((match = regex.exec(content)) !== null) {
-    const rawValue = match[0];
-
-    // Minimum viable JWT is 3 segments, each with content
-    const parts = rawValue.split('.');
-    if (parts.length !== 3 || parts.some(p => p.length < 4)) continue;
-
-    // High entropy check on the signature portion
-    const sig = parts[2];
-    const entropy = shannonEntropy(sig);
-    if (entropy < 3.5) continue; // Too low entropy, likely a false positive
-
-    const { severity, confidence, details } = analyzeJWT(rawValue);
-
-    const upToMatch = content.slice(0, match.index);
-    const line = upToMatch.split('\n').length;
-    const lastNewline = upToMatch.lastIndexOf('\n');
-    const column = match.index - lastNewline;
-
-    // For JWTs, show header + payload prefix, mask signature
-    const maskedValue = `${parts[0]}.${maskSecret(parts[1], { showPrefix: 4, showSuffix: 0 })}.••••••••`;
-
-    findings.push({
-      type: 'JWT_TOKEN',
-      name: 'JSON Web Token (JWT)',
-      category: 'Authentication Tokens',
-      severity,
-      confidence,
-      line,
-      column,
-      file: filename,
-      maskedValue,
-      description: `${details}. JWTs may contain encoded user data and grant API access.`,
-      remediation: 'Verify this JWT is not a real production token. JWTs should never be hardcoded. Use environment variables.',
-      lineContent: lines[line - 1] || '',
-    });
-  }
-
-  return findings;
-}
+export { RULES as rules };

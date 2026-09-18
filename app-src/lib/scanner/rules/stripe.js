@@ -1,108 +1,70 @@
 /**
- * Stripe API key detection rules.
+ * rules/stripe.js — Stripe API key detection.
  */
 
-import { maskSecret } from '../masking.js';
-
-const STRIPE_RULES = [
+export const RULES = [
   {
+    id: 'STRIPE_SECRET_KEY_LIVE',
     name: 'Stripe Live Secret Key',
     type: 'STRIPE_SECRET_KEY_LIVE',
     category: 'Payment Processing',
-    pattern: /\bsk_live_[A-Za-z0-9]{24,99}\b/g,
+    // sk_live_ prefix
+    pattern: /\bsk_live_[A-Za-z0-9]{24,}\b/g,
     severity: 'CRITICAL',
-    confidence: 99,
-    description: 'Stripe LIVE secret key detected. Can make real charges and access customer data.',
-    remediation: 'Roll key immediately at dashboard.stripe.com/apikeys. Check for unauthorized charges.',
-    maskOptions: { showPrefix: 8, showSuffix: 4 },
+    isProviderRule: true,
+    maskOptions: { showPrefix: 10, showSuffix: 4 },
+    description: 'Stripe live secret key. Grants full access to production payment processing.',
+    remediation: 'Roll the key immediately at https://dashboard.stripe.com/apikeys. Audit Stripe logs for unauthorized charges.',
   },
   {
-    name: 'Stripe Live Publishable Key',
-    type: 'STRIPE_PUBLISHABLE_KEY_LIVE',
-    category: 'Payment Processing',
-    pattern: /\bpk_live_[A-Za-z0-9]{24,99}\b/g,
-    severity: 'MEDIUM',
-    confidence: 95,
-    description: 'Stripe LIVE publishable key detected. Lower risk than secret key but still sensitive.',
-    remediation: 'Publishable keys are meant to be public, but still verify this exposure is intentional.',
-    maskOptions: { showPrefix: 8, showSuffix: 4 },
-  },
-  {
+    id: 'STRIPE_SECRET_KEY_TEST',
     name: 'Stripe Test Secret Key',
     type: 'STRIPE_SECRET_KEY_TEST',
     category: 'Payment Processing',
-    pattern: /\bsk_test_[A-Za-z0-9]{24,99}\b/g,
+    pattern: /\bsk_test_[A-Za-z0-9]{24,}\b/g,
     severity: 'HIGH',
-    confidence: 97,
-    description: 'Stripe TEST secret key detected. Cannot make real charges but reveals API structure.',
-    remediation: 'Still revoke and rotate. Test keys should not be committed to source control.',
-    maskOptions: { showPrefix: 8, showSuffix: 4 },
+    isProviderRule: true,
+    maskOptions: { showPrefix: 10, showSuffix: 4 },
+    description: 'Stripe test secret key. Should not be exposed even in test environments.',
+    remediation: 'Roll the key at https://dashboard.stripe.com/test/apikeys. Use environment variables.',
   },
   {
-    name: 'Stripe Test Publishable Key',
-    type: 'STRIPE_PUBLISHABLE_KEY_TEST',
+    id: 'STRIPE_PUBLISHABLE_KEY_LIVE',
+    name: 'Stripe Live Publishable Key',
+    type: 'STRIPE_PUBLISHABLE_KEY_LIVE',
     category: 'Payment Processing',
-    pattern: /\bpk_test_[A-Za-z0-9]{24,99}\b/g,
-    severity: 'LOW',
-    confidence: 90,
-    description: 'Stripe TEST publishable key detected. Low risk but indicates insecure practices.',
-    remediation: 'Move to environment variables even for test keys.',
-    maskOptions: { showPrefix: 8, showSuffix: 4 },
+    pattern: /\bpk_live_[A-Za-z0-9]{24,}\b/g,
+    severity: 'MEDIUM',
+    isProviderRule: true,
+    maskOptions: { showPrefix: 10, showSuffix: 4 },
+    description: 'Stripe live publishable key. Lower risk than secret keys but still sensitive.',
+    remediation: 'Publishable keys are safe for client-side but confirm no secret key co-exposure.',
   },
   {
+    id: 'STRIPE_WEBHOOK_SECRET',
+    name: 'Stripe Webhook Secret',
+    type: 'STRIPE_WEBHOOK_SECRET',
+    category: 'Payment Processing',
+    // whsec_ prefix
+    pattern: /\bwhsec_[A-Za-z0-9]{32,}\b/g,
+    severity: 'HIGH',
+    isProviderRule: true,
+    maskOptions: { showPrefix: 8, showSuffix: 4 },
+    description: 'Stripe webhook signing secret. Allows signature verification bypass.',
+    remediation: 'Rotate the webhook secret in the Stripe dashboard and update your endpoint.',
+  },
+  {
+    id: 'STRIPE_RESTRICTED_KEY',
     name: 'Stripe Restricted Key',
     type: 'STRIPE_RESTRICTED_KEY',
     category: 'Payment Processing',
-    pattern: /\brk_live_[A-Za-z0-9]{24,99}\b/g,
-    severity: 'CRITICAL',
-    confidence: 99,
-    description: 'Stripe restricted key detected. Has limited scope but still grants API access.',
-    remediation: 'Roll key immediately at dashboard.stripe.com/apikeys.',
-    maskOptions: { showPrefix: 8, showSuffix: 4 },
+    pattern: /\brk_(?:live|test)_[A-Za-z0-9]{24,}\b/g,
+    severity: 'HIGH',
+    isProviderRule: true,
+    maskOptions: { showPrefix: 10, showSuffix: 4 },
+    description: 'Stripe restricted API key with limited permissions.',
+    remediation: 'Roll the restricted key at https://dashboard.stripe.com/apikeys.',
   },
 ];
 
-/**
- * Detect Stripe API keys in file content.
- *
- * @param {string} content
- * @param {string} filename
- * @returns {object[]}
- */
-export function detect(content, filename) {
-  const findings = [];
-  const lines = content.split('\n');
-
-  for (const rule of STRIPE_RULES) {
-    const regex = new RegExp(rule.pattern.source, rule.pattern.flags);
-    let match;
-
-    while ((match = regex.exec(content)) !== null) {
-      const rawValue = match[0];
-
-      const upToMatch = content.slice(0, match.index);
-      const line = upToMatch.split('\n').length;
-      const lastNewline = upToMatch.lastIndexOf('\n');
-      const column = match.index - lastNewline;
-
-      const maskedValue = maskSecret(rawValue, rule.maskOptions);
-
-      findings.push({
-        type: rule.type,
-        name: rule.name,
-        category: rule.category,
-        severity: rule.severity,
-        confidence: rule.confidence,
-        line,
-        column,
-        file: filename,
-        maskedValue,
-        description: rule.description,
-        remediation: rule.remediation,
-        lineContent: lines[line - 1] || '',
-      });
-    }
-  }
-
-  return findings;
-}
+export { RULES as rules };
