@@ -7,6 +7,7 @@
  * Scans it using the repository scanner and returns masked findings.
  *
  * SECURITY:
+ *   - Rate limiting protection for repository archives.
  *   - Raw secrets never returned in response.
  *   - Archive buffer is held in memory only for the duration of scanning.
  *   - No data is written to disk.
@@ -17,12 +18,23 @@ import { NextResponse } from 'next/server';
 import { scanZipRepository } from '@/lib/repository/repository-scanner';
 import { recordScan } from '@/lib/repository/history';
 import { LIMITS } from '@/lib/repository/archive';
+import { checkRateLimit, getClientIp, getRateLimitHeaders, RATE_LIMIT_CONFIGS } from '@/lib/security/rate-limiter';
 
 /** Hard cap: 50 MB per upload (enforced before reading body). */
 const MAX_UPLOAD_BYTES = LIMITS.MAX_ARCHIVE_BYTES;
 
 export async function POST(request) {
   try {
+    // Rate Limiting Protection
+    const clientIp = getClientIp(request);
+    const rateLimit = checkRateLimit(`upload:${clientIp}`, RATE_LIMIT_CONFIGS.upload);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: RATE_LIMIT_CONFIGS.upload.message },
+        { status: 429, headers: getRateLimitHeaders(rateLimit) }
+      );
+    }
+
     const contentType = request.headers.get('content-type') || '';
 
     if (!contentType.includes('multipart/form-data')) {
@@ -109,7 +121,10 @@ export async function POST(request) {
       config:          result.config,
     };
 
-    return NextResponse.json(response, { status: 200 });
+    return NextResponse.json(response, {
+      status: 200,
+      headers: getRateLimitHeaders(rateLimit),
+    });
 
   } catch (err) {
     // Return a meaningful error for known user errors, generic for others

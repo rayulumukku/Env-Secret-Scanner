@@ -1,12 +1,25 @@
 'use client';
 
+/**
+ * components/layout/Navbar.js
+ *
+ * Polished developer-security navigation bar.
+ * Includes command palette trigger (⌘K), real-time notification indicator,
+ * organization switcher, and comprehensive user profile & settings dropdown.
+ */
+
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Shield, Menu, X, Zap, User, LogOut, Settings, FolderGit2, Search, Users, Activity, FileText } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import {
+  Shield, Menu, X, Zap, User, LogOut, Settings,
+  FolderGit2, Search, Users, Activity, FileText,
+  Lock, BarChart3, HelpCircle
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { OrgSwitcher } from './OrgSwitcher';
 import { NotificationBell } from './NotificationBell';
+import { CommandPalette } from './CommandPalette';
 
 const NAV_LINKS = [
   { href: '/dashboard',          label: 'Dashboard' },
@@ -16,9 +29,8 @@ const NAV_LINKS = [
   { href: '/integrations',       label: 'Integrations' },
   { href: '/scan',               label: 'Scanner' },
   { href: '/rules',              label: 'Rules' },
-  { href: '/settings/members',   label: 'Team' },
-  { href: '/settings/audit-log', label: 'Audit Log' },
   { href: '/docs',               label: 'Docs' },
+  { href: '/status',             label: 'Status' },
 ];
 
 export function Navbar() {
@@ -48,7 +60,7 @@ export function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/50 bg-background/85 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-border/50 bg-background/85 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Left: Brand + Org Switcher */}
@@ -58,13 +70,13 @@ export function Navbar() {
                 <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-center group-hover:border-primary/60 transition-colors">
                   <Shield className="w-4.5 h-4.5 text-primary" />
                 </div>
-                <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-primary rounded-full pulse-ring" />
+                <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary rounded-full pulse-ring" />
               </div>
               <div className="hidden sm:block">
                 <span className="font-bold text-base tracking-tight text-foreground">
                   Secret<span className="text-primary">Shield</span>
                 </span>
-                <div className="text-[10px] text-muted-foreground leading-none font-mono">v2.0 SaaS</div>
+                <div className="text-[10px] text-muted-foreground leading-none font-mono">v0.4.0</div>
               </div>
             </Link>
 
@@ -72,24 +84,30 @@ export function Navbar() {
           </div>
 
           {/* Desktop nav links */}
-          <nav className="hidden lg:flex items-center gap-1">
-            {NAV_LINKS.map(link => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                  pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href))
-                    ? 'text-primary bg-primary/10 font-semibold'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))}
+          <nav className="hidden xl:flex items-center gap-1">
+            {NAV_LINKS.map(link => {
+              const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    isActive
+                      ? 'text-primary bg-primary/10 font-semibold'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Right Actions */}
           <div className="flex items-center gap-2.5">
+            {/* Command Palette Trigger */}
+            <CommandPalette />
+
             <NotificationBell />
 
             <Link href="/scan" className="hidden sm:block">
@@ -105,6 +123,8 @@ export function Navbar() {
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center gap-2 p-1.5 rounded-lg border border-border/50 bg-secondary/30 hover:bg-secondary/70 text-foreground transition-colors"
+                  aria-expanded={userMenuOpen}
+                  aria-label="User menu"
                 >
                   <div className="w-6 h-6 rounded-full bg-primary/20 text-primary font-bold text-xs flex items-center justify-center">
                     {user.name ? user.name[0].toUpperCase() : 'U'}
@@ -124,6 +144,33 @@ export function Navbar() {
                       </div>
 
                       <Link
+                        href="/settings/profile"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-secondary text-foreground transition-colors"
+                      >
+                        <User className="w-3.5 h-3.5 text-muted-foreground" />
+                        Profile Settings
+                      </Link>
+
+                      <Link
+                        href="/settings/security"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-secondary text-foreground transition-colors"
+                      >
+                        <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+                        Security & Sessions
+                      </Link>
+
+                      <Link
+                        href="/settings/usage"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-secondary text-foreground transition-colors"
+                      >
+                        <BarChart3 className="w-3.5 h-3.5 text-muted-foreground" />
+                        Usage & Metrics
+                      </Link>
+
+                      <Link
                         href="/settings/members"
                         onClick={() => setUserMenuOpen(false)}
                         className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-secondary text-foreground transition-colors"
@@ -139,6 +186,15 @@ export function Navbar() {
                       >
                         <Activity className="w-3.5 h-3.5 text-muted-foreground" />
                         Audit Log
+                      </Link>
+
+                      <Link
+                        href="/settings/system-health"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-secondary text-foreground transition-colors"
+                      >
+                        <Shield className="w-3.5 h-3.5 text-muted-foreground" />
+                        System Health
                       </Link>
 
                       <div className="border-t border-border/40 my-1 pt-1">
@@ -167,7 +223,7 @@ export function Navbar() {
 
             {/* Mobile hamburger */}
             <button
-              className="lg:hidden p-2 rounded-md text-muted-foreground hover:text-foreground"
+              className="xl:hidden p-2 rounded-md text-muted-foreground hover:text-foreground"
               onClick={() => setMobileOpen(v => !v)}
               aria-label="Toggle menu"
             >
@@ -179,7 +235,7 @@ export function Navbar() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="lg:hidden border-t border-border/50 bg-background/95 backdrop-blur-md px-4 py-3 space-y-1">
+        <div className="xl:hidden border-t border-border/50 bg-background/95 backdrop-blur-md px-4 py-3 space-y-1">
           {NAV_LINKS.map(link => (
             <Link
               key={link.href}
@@ -192,12 +248,14 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
-          <Link href="/scan" onClick={() => setMobileOpen(false)}>
-            <Button size="sm" className="w-full mt-3 gap-1.5 font-semibold">
-              <Zap className="w-3.5 h-3.5" />
-              Scan Code
-            </Button>
-          </Link>
+          <div className="pt-2 border-t border-border/40">
+            <Link href="/scan" onClick={() => setMobileOpen(false)}>
+              <Button size="sm" className="w-full gap-1.5 font-semibold">
+                <Zap className="w-3.5 h-3.5" />
+                Scan Code
+              </Button>
+            </Link>
+          </div>
         </div>
       )}
     </header>
@@ -205,4 +263,3 @@ export function Navbar() {
 }
 
 export default Navbar;
-

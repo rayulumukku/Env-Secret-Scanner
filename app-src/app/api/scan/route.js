@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { scan } from '@/lib/scanner/engine';
+import { checkRateLimit, getClientIp, getRateLimitHeaders, RATE_LIMIT_CONFIGS } from '@/lib/security/rate-limiter';
 
 /** Maximum file size per file: 2MB */
 const MAX_FILE_SIZE = 2 * 1024 * 1024;
@@ -61,6 +62,16 @@ function sanitizeFilename(name) {
 
 export async function POST(request) {
   try {
+    // Rate Limiting Protection
+    const clientIp = getClientIp(request);
+    const rateLimit = checkRateLimit(`scan:${clientIp}`, RATE_LIMIT_CONFIGS.scan);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: RATE_LIMIT_CONFIGS.scan.message },
+        { status: 429, headers: getRateLimitHeaders(rateLimit) }
+      );
+    }
+
     const contentType = request.headers.get('content-type') || '';
 
     if (!contentType.includes('application/json')) {
@@ -139,7 +150,10 @@ export async function POST(request) {
       errors:       result.errors,
     };
 
-    return NextResponse.json(response, { status: 200 });
+    return NextResponse.json(response, {
+      status: 200,
+      headers: getRateLimitHeaders(rateLimit),
+    });
 
   } catch {
     // SECURITY: Generic error — no internal details leaked

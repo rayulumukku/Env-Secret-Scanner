@@ -1,418 +1,103 @@
 import Link from 'next/link';
 import {
-  BookOpen, Terminal, Shield, Code2, Key, Database,
-  Cloud, GitBranch, Zap, ChevronRight, ExternalLink
+  BookOpen, Terminal, Shield, Zap, GitBranch, Cpu,
+  Sliders, CheckCircle2, Lock, ArrowRight, HelpCircle
 } from 'lucide-react';
+import { DocLayout } from '@/components/docs/DocLayout';
+import { DOC_SECTIONS } from '@/lib/docs/data';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 export const metadata = {
   title: 'Documentation — SecretShield',
-  description: 'Learn how to use SecretShield to scan source code for exposed secrets, API keys, and credentials.',
+  description: 'Technical guides, architecture overviews, CLI usage, and API reference for SecretShield.',
 };
 
-const SECTIONS = [
-  {
-    id: 'quickstart',
-    icon: Zap,
-    title: 'Quick Start',
-    content: [
-      {
-        type: 'text',
-        text: 'SecretShield scans source code for accidentally exposed API keys, tokens, passwords, and other secrets. Get started in seconds — no signup required.',
-      },
-      {
-        type: 'steps',
-        steps: [
-          { step: '1', text: 'Navigate to the Scanner page' },
-          { step: '2', text: 'Paste code, upload files, or click "Load Demo" to try with fake credentials' },
-          { step: '3', text: 'Click "Scan Code" and review findings in the Results dashboard' },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'detection',
-    icon: Shield,
-    title: 'Detection Engine',
-    content: [
-      {
-        type: 'text',
-        text: 'The scanner uses a modular rule engine with 10+ built-in rule modules. Each rule uses regex patterns, entropy analysis, and confidence scoring.',
-      },
-      {
-        type: 'table',
-        headers: ['Rule', 'Detects', 'Severity'],
-        rows: [
-          ['AWS', 'Access Key IDs, Secret Keys, Session Tokens', 'CRITICAL'],
-          ['GitHub', 'PATs, OAuth tokens, App tokens', 'CRITICAL'],
-          ['OpenAI', 'Project keys, legacy sk- keys', 'CRITICAL'],
-          ['Stripe', 'Live & test secret keys', 'CRITICAL / HIGH'],
-          ['Google', 'API keys, OAuth secrets, service accounts', 'HIGH'],
-          ['Slack', 'Bot tokens, webhook URLs', 'HIGH'],
-          ['JWT', 'Hardcoded JSON Web Tokens', 'MEDIUM / HIGH'],
-          ['Private Keys', 'RSA, EC, OpenSSH, PGP, PKCS#8', 'CRITICAL'],
-          ['Database', 'Connection strings with passwords', 'CRITICAL'],
-          ['Generic', 'Passwords, API keys, high-entropy strings', 'MEDIUM / HIGH'],
-        ],
-      },
-    ],
-  },
-  {
-    id: 'entropy',
-    icon: Code2,
-    title: 'Entropy Detection',
-    content: [
-      {
-        type: 'text',
-        text: 'Shannon entropy measures the randomness of a string. High-entropy strings in assignment contexts (e.g. const KEY = "...") are flagged as potential secrets even without a known prefix.',
-      },
-      {
-        type: 'code',
-        code: '// Entropy threshold: 4.5 (default)\n// Strings below this threshold are unlikely to be secrets\n\nconst SAFE = "hello_world";          // entropy: 2.9 — ignored\nconst SECRET = "xK9#mP2$nL5@qR8";   // entropy: 5.1 — flagged',
-      },
-    ],
-  },
-  {
-    id: 'masking',
-    icon: Key,
-    title: 'Secret Masking',
-    content: [
-      {
-        type: 'text',
-        text: 'Detected secrets are NEVER shown in full. The masking engine reveals only a short prefix and suffix, replacing the rest with bullet characters (•).',
-      },
-      {
-        type: 'code',
-        code: '// Raw secret (never shown)\n"sk-proj-AbCdEfGhIjKlMnOpQrStUvWxYz1234567890"\n\n// What you see in SecretShield\n"sk-proj-••••••••1234"',
-      },
-    ],
-  },
-  {
-    id: 'custom-rules',
-    icon: Code2,
-    title: 'Custom Rules',
-    content: [
-      {
-        type: 'text',
-        text: 'Create your own detection rules for internal tokens and organization-specific patterns on the Rules page.',
-      },
-      {
-        type: 'code',
-        code: '// Example custom rule\nName:     "Internal API Token"\nPattern:  MYAPP_[A-Z0-9]{32}\nSeverity: CRITICAL\nCategory: Internal',
-      },
-      {
-        type: 'text',
-        text: 'Regex patterns are validated before saving. Custom rules are applied in addition to all built-in rules.',
-      },
-    ],
-  },
-  {
-    id: 'api',
-    icon: Terminal,
-    title: 'API Reference',
-    content: [
-      {
-        type: 'text',
-        text: 'SecretShield exposes a JSON API for programmatic scanning.',
-      },
-      {
-        type: 'code',
-        code: `POST /api/scan
-Content-Type: application/json
+const TOPIC_ICONS = {
+  'getting-started': BookOpen,
+  'scanner': Cpu,
+  'cli': Terminal,
+  'pre-commit': Shield,
+  'github': GitBranch,
+  'gitlab': GitBranch,
+  'github-actions': Zap,
+  'custom-rules': Sliders,
+  'baseline': CheckCircle2,
+  'remediation': Lock,
+  'api': Terminal,
+  'security': Shield,
+  'privacy': Lock,
+  'faq': HelpCircle,
+};
 
-{
-  "files": [
-    { "name": "config.js", "content": "const KEY = \\"...\\";"}
-  ],
-  "customRules": [],
-  "allowlistFingerprints": [],
-  "allowlistFiles": []
-}`,
-      },
-      {
-        type: 'code',
-        code: `// Response (masked values only — never raw secrets)
-{
-  "id": "scan_abc12345",
-  "timestamp": "2025-01-01T00:00:00Z",
-  "stats": {
-    "filesScanned": 1,
-    "totalFindings": 2,
-    "critical": 1,
-    "high": 1,
-    "medium": 0,
-    "low": 0,
-    "duration": 47
-  },
-  "findings": [
-    {
-      "type": "AWS_ACCESS_KEY_ID",
-      "name": "AWS Access Key ID",
-      "severity": "CRITICAL",
-      "confidence": 98,
-      "file": "config.js",
-      "line": 3,
-      "maskedValue": "AKIAIOSFODNN7••••••••3KEY",
-      "fingerprint": "aws_access_a1b2c3d4",
-      "description": "...",
-      "remediation": "..."
-    }
-  ]
-}`,
-      },
-      {
-        type: 'text',
-        text: 'Limits: 500KB per file, 5MB total. Allowed file types: JS, TS, Python, Ruby, PHP, Go, YAML, JSON, .env, and more.',
-      },
-    ],
-  },
-  {
-    id: 'security',
-    icon: Shield,
-    title: 'Security Architecture',
-    content: [
-      {
-        type: 'text',
-        text: 'SecretShield is built with a security-first approach. Here\'s what we guarantee:',
-      },
-      {
-        type: 'list',
-        items: [
-          'Raw secret values are never logged to the server console',
-          'Only masked values and fingerprints are returned from the API',
-          'localStorage stores only fingerprints and masked values — never raw secrets',
-          'Uploaded filenames are sanitized to prevent path traversal',
-          'File size is limited (500KB per file, 5MB total)',
-          'File types are validated against an allowlist',
-          'Custom regex patterns have a 5-second execution timeout to prevent ReDoS',
-          'No secrets are included in error messages',
-          'No third-party AI APIs are used',
-        ],
-      },
-    ],
-  },
-  {
-    id: 'cli',
-    icon: Terminal,
-    title: 'Developer CLI & Git Hook',
-    content: [
-      {
-        type: 'text',
-        text: 'SecretShield provides a standalone CLI tool (@secretshield/cli) to scan files locally and prevent secrets from ever being committed to Git.',
-      },
-      {
-        type: 'code',
-        code: `# Install CLI globally or in your repository
-npm install -g @secretshield/cli
-
-# Scan current directory
-secretshield scan .
-
-# Scan specific files or subdirectories
-secretshield scan ./src --json
-
-# Install pre-commit hook (blocks commits with HIGH or CRITICAL secrets)
-secretshield install-hook`,
-      },
-      {
-        type: 'text',
-        text: 'The pre-commit hook runs in milliseconds across Git staged files before each commit. If any high-confidence secrets are detected, the commit is blocked before reaching your remote repository.',
-      },
-    ],
-  },
-  {
-    id: 'cicd',
-    icon: GitBranch,
-    title: 'CI/CD & SARIF 2.1.0',
-    content: [
-      {
-        type: 'text',
-        text: 'Integrate SecretShield directly into GitHub Actions, GitLab CI, or any pipeline. Output SARIF 2.1.0 reports for GitHub Advanced Security code scanning alerts.',
-      },
-      {
-        type: 'code',
-        code: `# Run in CI mode (exits 1 if findings meet threshold)
-secretshield ci --fail-on high
-
-# Export SARIF 2.1.0 report for GitHub Code Scanning
-secretshield scan . --sarif > secretshield-results.sarif
-
-# Manage legacy accepted findings via baselines
-secretshield baseline create
-secretshield ci --baseline .secretshield-baseline.json`,
-      },
-    ],
-  },
-  {
-    id: 'faq',
-    icon: BookOpen,
-    title: 'FAQ',
-    content: [
-      {
-        type: 'qa',
-        items: [
-          {
-            q: 'Does SecretShield send my code anywhere?',
-            a: 'No. Scanning runs entirely locally in memory or on your own server. Your code is never sent to any third-party AI or cloud service.',
-          },
-          {
-            q: 'Can I use this in CI/CD?',
-            a: 'Yes! SecretShield includes a standalone CLI with `secretshield ci`, SARIF 2.1.0 export, and GitHub Actions workflows.',
-          },
-          {
-            q: 'Why are secrets masked in results?',
-            a: 'To prevent accidental exposure. Even in a security dashboard, showing raw secrets creates risk. Masked values give you enough context to identify the finding without re-exposing the credential.',
-          },
-          {
-            q: 'What file types are supported?',
-            a: 'JS, TS, JSX, TSX, Python, Ruby, PHP, Java, Go, Rust, C#, C, C++, YAML, JSON, TOML, INI, .env, shell scripts, Terraform, SQL, and more.',
-          },
-          {
-            q: 'How do I reduce false positives?',
-            a: 'Mark findings as "False Positive" to add them to your allowlist, or create a baseline via `secretshield baseline create`. You can also adjust entropy thresholds in Settings.',
-          },
-        ],
-      },
-    ],
-  },
-];
-
-export default function DocsPage() {
+export default function DocsIndexPage() {
   return (
-    <div className="min-h-screen bg-grid">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="flex items-center gap-2.5 mb-10">
-          <BookOpen className="w-5 h-5 text-primary" />
-          <h1 className="text-2xl font-bold">Documentation</h1>
-        </div>
-
-        <div className="grid lg:grid-cols-[220px_1fr] gap-8">
-          {/* Sidebar nav */}
-          <nav className="hidden lg:block">
-            <div className="sticky top-24 space-y-1">
-              {SECTIONS.map(s => (
-                <a
-                  key={s.id}
-                  href={`#${s.id}`}
-                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-secondary/50"
-                >
-                  <s.icon className="w-3.5 h-3.5 flex-shrink-0" />
-                  {s.title}
-                </a>
-              ))}
-            </div>
-          </nav>
-
-          {/* Content */}
-          <div className="space-y-12">
-            {SECTIONS.map(section => (
-              <section key={section.id} id={section.id} className="scroll-mt-24">
-                <div className="flex items-center gap-2 mb-4">
-                  <section.icon className="w-5 h-5 text-primary" />
-                  <h2 className="text-xl font-bold">{section.title}</h2>
-                </div>
-
-                <div className="space-y-4">
-                  {section.content.map((block, i) => {
-                    if (block.type === 'text') {
-                      return <p key={i} className="text-muted-foreground leading-relaxed">{block.text}</p>;
-                    }
-
-                    if (block.type === 'code') {
-                      return (
-                        <div key={i} className="rounded-lg overflow-hidden border border-border/50">
-                          <div className="bg-secondary/50 px-4 py-2 border-b border-border/30">
-                            <span className="text-xs font-mono text-muted-foreground">code</span>
-                          </div>
-                          <pre className="bg-[oklch(0.08_0.004_240)] p-4 text-xs font-mono text-foreground/80 overflow-x-auto leading-relaxed">
-                            {block.code}
-                          </pre>
-                        </div>
-                      );
-                    }
-
-                    if (block.type === 'table') {
-                      return (
-                        <div key={i} className="rounded-lg border border-border/50 overflow-hidden">
-                          <table className="w-full text-sm">
-                            <thead className="bg-secondary/50">
-                              <tr>
-                                {block.headers.map(h => (
-                                  <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">{h}</th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border/30">
-                              {block.rows.map((row, ri) => (
-                                <tr key={ri} className="hover:bg-secondary/20">
-                                  {row.map((cell, ci) => (
-                                    <td key={ci} className={`px-4 py-2.5 text-sm ${ci === 0 ? 'font-semibold text-foreground' : ci === 2 ? 'font-mono text-xs' : 'text-muted-foreground'}`}>
-                                      {ci === 2 ? (
-                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                          cell.includes('CRITICAL') ? 'bg-red-950/50 text-red-400' :
-                                          cell.includes('HIGH') ? 'bg-orange-950/50 text-orange-400' :
-                                          'bg-yellow-950/50 text-yellow-400'
-                                        }`}>{cell}</span>
-                                      ) : cell}
-                                    </td>
-                                  ))}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      );
-                    }
-
-                    if (block.type === 'list') {
-                      return (
-                        <ul key={i} className="space-y-2">
-                          {block.items.map((item, li) => (
-                            <li key={li} className="flex items-start gap-2 text-sm text-muted-foreground">
-                              <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-1.5" />
-                              {item}
-                            </li>
-                          ))}
-                        </ul>
-                      );
-                    }
-
-                    if (block.type === 'steps') {
-                      return (
-                        <div key={i} className="space-y-2">
-                          {block.steps.map((s, si) => (
-                            <div key={si} className="flex items-start gap-3">
-                              <span className="w-6 h-6 rounded-full bg-primary/10 border border-primary/30 text-primary text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
-                                {s.step}
-                              </span>
-                              <p className="text-sm text-muted-foreground pt-0.5">{s.text}</p>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    }
-
-                    if (block.type === 'qa') {
-                      return (
-                        <div key={i} className="space-y-4">
-                          {block.items.map((qa, qi) => (
-                            <div key={qi} className="rounded-lg border border-border/40 bg-card/30 p-4">
-                              <p className="font-semibold text-sm mb-1.5">{qa.q}</p>
-                              <p className="text-sm text-muted-foreground leading-relaxed">{qa.a}</p>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    }
-
-                    return null;
-                  })}
-                </div>
-              </section>
-            ))}
+    <DocLayout currentSlug="getting-started">
+      <div className="space-y-8">
+        <div className="p-6 rounded-2xl border border-primary/30 bg-primary/5 space-y-3">
+          <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">
+            SecretShield Documentation Hub
+          </Badge>
+          <h2 className="text-xl font-bold text-foreground">
+            Explore Architecture, Tools, and Integrations
+          </h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Welcome to the official developer documentation for SecretShield. Everything you need to scan code, configure Git hooks, protect GitHub/GitLab repositories, and remediate exposed credentials.
+          </p>
+          <div className="pt-2 flex flex-wrap gap-3">
+            <Link href="/docs/getting-started">
+              <Button size="sm" className="gap-2 font-bold bg-primary text-primary-foreground hover:bg-primary/90">
+                Start Quickstart Guide
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Button>
+            </Link>
+            <Link href="/docs/cli">
+              <Button variant="outline" size="sm" className="gap-2 font-semibold">
+                <Terminal className="w-3.5 h-3.5" />
+                CLI Documentation
+              </Button>
+            </Link>
           </div>
         </div>
+
+        {/* Categories Grid */}
+        <div className="space-y-6">
+          {DOC_SECTIONS.map(section => (
+            <div key={section.category} className="space-y-3">
+              <h3 className="text-base font-bold text-foreground border-b border-border/40 pb-2">
+                {section.category}
+              </h3>
+              <div className="grid sm:grid-cols-2 gap-3.5">
+                {section.items.map(item => {
+                  const Icon = TOPIC_ICONS[item.slug] || BookOpen;
+                  return (
+                    <Link
+                      key={item.slug}
+                      href={`/docs/${item.slug}`}
+                      className="p-4 rounded-xl border border-border/60 bg-card/40 hover:border-primary/40 hover:bg-card/70 transition-all group block space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 rounded-lg bg-secondary text-primary group-hover:bg-primary/10 transition-colors">
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <h4 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
+                            {item.title}
+                          </h4>
+                        </div>
+                        <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed pl-8">
+                        {item.description}
+                      </p>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+    </DocLayout>
   );
 }
