@@ -1,0 +1,124 @@
+{
+  "name": "secretshield-vscode",
+  "displayName": "SecretShield — Real-time Secret & Credential Scanner",
+  "description": "Zero-cloud, privacy-first real-time secret scanner for VS Code. Detect API keys, tokens, and credentials before they get committed.",
+  "version": "1.0.0",
+  "publisher": "secretshield",
+  "type": "module",
+  "engines": {
+    "vscode": "^1.80.0",
+    "node": ">=18.0.0"
+  },
+  "categories": [
+    "Linters",
+    "Security",
+    "Programming Languages"
+  ],
+  "keywords": [
+    "secret scanner",
+    "security",
+    "credentials",
+    "api keys",
+    "linter",
+    "devsecops",
+    "privacy"
+  ],
+  "icon": "assets/icon.png",
+  "main": "./extension.js",
+  "scripts": {
+    "test": "node --test __tests__/**/*.test.js"
+  },
+  "dependencies": {
+    "@secretshield/scanner": "file:../../packages/scanner",
+    "@secretshield/config": "file:../../packages/config"
+  },
+  "activationEvents": [
+    "onStartupFinished",
+    "workspaceContains:.secretshield.json",
+    "onLanguage:javascript",
+    "onLanguage:typescript",
+    "onLanguage:python",
+    "onLanguage:json",
+    "onLanguage:yaml",
+    "onLanguage:env",
+    "onLanguage:properties"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "secretshield.scanFile",
+        "title": "SecretShield: Scan Current File",
+        "category": "SecretShield"
+      },
+      {
+        "command": "secretshield.scanWorkspace",
+        "title": "SecretShield: Scan Entire Workspace",
+        "category": "SecretShield"
+      },
+      {
+        "command": "secretshield.showFindings",
+        "title": "SecretShield: Focus Findings Sidebar",
+        "category": "SecretShield"
+      },
+      {
+        "command": "secretshield.clearDiagnostics",
+        "title": "SecretShield: Clear All Findings",
+        "category": "SecretShield"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "secretshield-container",
+          "title": "SecretShield",
+          "icon": "$(shield)"
+        }
+      ]
+    },
+    "views": {
+      "secretshield-container": [
+        {
+          "id": "secretshield-findings-view",
+          "name": "Active Findings",
+          "visibility": "visible"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "SecretShield",
+      "properties": {
+        "secretshield.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable or disable SecretShield real-time scanning."
+        },
+        "secretshield.scanOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically scan files whenever they are saved."
+        },
+        "secretshield.scanOnChange": {
+          "type": "boolean",
+          "default": false,
+          "description": "Scan files on every keystroke (debounced 500ms)."
+        },
+        "secretshield.severityThreshold": {
+          "type": "string",
+          "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+          "default": "LOW",
+          "description": "Minimum finding severity to display as a diagnostic problem."
+        },
+        "secretshield.configPath": {
+          "type": "string",
+          "default": ".secretshield.json",
+          "description": "Path to custom .secretshield.json configuration file."
+        },
+        "secretshield.maxFileSize": {
+          "type": "number",
+          "default": 5242880,
+          "description": "Maximum file size in bytes to scan (default 5MB)."
+        }
+      }
+    }
+  }
+}

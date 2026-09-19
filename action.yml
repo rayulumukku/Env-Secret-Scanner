@@ -1,0 +1,81 @@
+name: 'SecretShield Secret Scanner'
+description: 'Fast, privacy-first secret scanner for GitHub Actions. Detect exposed API keys, tokens, and credentials with zero external AI calls.'
+author: 'SecretShield Team'
+
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  path:
+    description: 'Path or directory to scan'
+    required: false
+    default: '.'
+  fail-on:
+    description: 'Minimum severity level that will fail the build (LOW, MEDIUM, HIGH, CRITICAL)'
+    required: false
+    default: 'HIGH'
+  diff-only:
+    description: 'Scan only git diff changes (useful for pull requests)'
+    required: false
+    default: 'false'
+  baseline-file:
+    description: 'Path to baseline suppression file'
+    required: false
+    default: '.secretshield-baseline.json'
+  config-file:
+    description: 'Path to .secretshield.json configuration'
+    required: false
+    default: '.secretshield.json'
+  sarif-file:
+    description: 'Path where SARIF 2.1.0 output should be saved'
+    required: false
+    default: 'secretshield-results.sarif'
+  upload-sarif:
+    description: 'Whether to upload SARIF report to GitHub Code Scanning'
+    required: false
+    default: 'true'
+
+outputs:
+  findings-count:
+    description: 'Total number of active findings detected'
+    value: ${{ steps.scan.outputs.findings-count }}
+  sarif-path:
+    description: 'Location of the generated SARIF file'
+    value: ${{ inputs.sarif-file }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Run SecretShield Scanner
+      id: scan
+      shell: bash
+      run: |
+        ARGS="${{ inputs.path }} --sarif ${{ inputs.sarif-file }} --severity ${{ inputs.fail-on }}"
+        
+        if [ "${{ inputs.diff-only }}" = "true" ]; then
+          ARGS="$ARGS --diff"
+        fi
+        
+        if [ -f "${{ inputs.baseline-file }}" ]; then
+          ARGS="$ARGS --baseline ${{ inputs.baseline-file }}"
+        fi
+
+        if [ -f "${{ inputs.config-file }}" ]; then
+          ARGS="$ARGS --config ${{ inputs.config-file }}"
+        fi
+
+        echo "Running SecretShield with arguments: $ARGS"
+        node packages/cli/bin/secretshield.js scan $ARGS
+
+    - name: Upload SARIF to GitHub Code Scanning
+      if: inputs.upload-sarif == 'true' && always()
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.sarif-file }}
+        category: 'secretshield'

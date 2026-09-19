@@ -20,7 +20,9 @@ export const DOC_SECTIONS = [
   {
     category: 'Developer & CI/CD Tooling',
     items: [
+      { slug: 'npm', title: 'Standalone npm Package', description: 'Embed @secretshield/scanner directly into Node.js applications and pipelines.' },
       { slug: 'cli', title: 'CLI & Benchmark Tool', description: 'Run scans, benchmarks, and SARIF exports directly from your terminal.' },
+      { slug: 'vscode', title: 'VS Code Extension', description: 'Real-time offline secret scanning in Visual Studio Code.' },
       { slug: 'pre-commit', title: 'Git Pre-Commit Hooks', description: 'Block exposed secrets locally before git commits are written.' },
       { slug: 'github', title: 'GitHub App Integration', description: 'Automated Pull Request scanning, review annotations, and webhook handlers.' },
       { slug: 'gitlab', title: 'GitLab CI Integration', description: 'Scan merge requests and branch pipelines using GitLab webhooks and CI.' },
@@ -156,6 +158,150 @@ Strings with character set entropy $> 4.5$ and variable names matching sensitive
 Detected raw secrets are immediately converted into safe 8-character fingerprints:
 - Prefix and suffix are retained (e.g., \`AKIA...MPLE\`).
 - Raw values are scrubbed from memory buffers and are never persisted to database tables.
+`,
+  },
+
+  'npm': {
+    slug: 'npm',
+    title: 'Standalone npm Package (@secretshield/scanner)',
+    description: 'Embed the lightweight, zero-cloud secret scanning engine directly into Node.js applications, custom scripts, and build pipelines.',
+    category: 'Developer & CI/CD Tooling',
+    headings: [
+      { id: 'installation', title: 'Installation' },
+      { id: 'quickstart', title: 'Programmatic Scanning' },
+      { id: 'scan-directory', title: 'Directory & File Scans' },
+      { id: 'git-diff', title: 'Scanning Git Diffs' },
+      { id: 'security-guarantees', title: 'Security & Privacy Guarantees' },
+    ],
+    content: `
+## Installation
+
+Install \`@secretshield/scanner\` as a dependency in your Node.js project:
+
+\`\`\`bash
+npm install @secretshield/scanner
+# or using yarn
+yarn add @secretshield/scanner
+# or using pnpm
+pnpm add @secretshield/scanner
+\`\`\`
+
+## Programmatic Scanning
+
+Scan raw strings in-memory with sub-millisecond execution:
+
+\`\`\`javascript
+import { scanText } from '@secretshield/scanner';
+
+const codeSnippet = \`
+  const awsKey = "AKIAIOSFODNN7EXAMPLE";
+\`;
+
+const result = await scanText(codeSnippet, { filename: 'config.js' });
+
+console.log(\`Status: \${result.status}\`);
+console.log(\`Found \${result.findings.length} secret(s):\`);
+
+for (const finding of result.findings) {
+  console.log(\` - [\${finding.severity}] \${finding.ruleName}: \${finding.maskedValue} (Line \${finding.line})\`);
+}
+\`\`\`
+
+## Directory & File Scans
+
+Scan files and full directory trees recursively:
+
+\`\`\`javascript
+import { scanFile, scanDirectory } from '@secretshield/scanner';
+
+// Scan single file
+const fileResult = await scanFile('./src/auth/jwt.js');
+
+// Scan entire directory with custom options
+const dirResult = await scanDirectory('./src', {
+  maxFileSize: 5 * 1024 * 1024, // 5MB limit
+  customRules: [],
+  allowlistFiles: ['sample.env.example']
+});
+
+console.log(\`Scanned \${dirResult.filesScanned} files in \${dirResult.duration}ms\`);
+\`\`\`
+
+## Scanning Git Diffs
+
+Audit incoming code changes in CI pipelines or Git hook wrappers:
+
+\`\`\`javascript
+import { scanGitDiff } from '@secretshield/scanner';
+
+const diffOutput = \`
++ const API_KEY = "sk_test_51AbcDefGhIjKlMnOpQrStUvWxYz0123456789";
+\`;
+
+const diffResult = await scanGitDiff(diffOutput);
+if (diffResult.findings.length > 0) {
+  console.error('SecretShield detected secrets in Git diff!');
+}
+\`\`\`
+
+## Security & Privacy Guarantees
+
+1. **Zero External AI Calls**: Runs purely locally with deterministic regex patterns, Shannon entropy calculation, and contextual false-positive suppression.
+2. **Immediate Masking**: Raw secret strings never escape the detector boundary.
+3. **No Native Binaries**: Pure JavaScript with JSDoc typing for frictionless cross-platform deployments.
+`,
+  },
+
+  'vscode': {
+    slug: 'vscode',
+    title: 'VS Code Extension',
+    description: 'Catch exposed credentials in real-time as you code with the official SecretShield VS Code extension.',
+    category: 'Developer & CI/CD Tooling',
+    headings: [
+      { id: 'installation', title: 'Installation & Setup' },
+      { id: 'features', title: 'Core Capabilities' },
+      { id: 'commands', title: 'Commands & Shortcuts' },
+      { id: 'configuration', title: 'Configuration Settings' },
+    ],
+    content: `
+## Installation & Setup
+
+Install the SecretShield extension from the Visual Studio Code Marketplace or load the extension from the \`extensions/vscode\` directory:
+
+1. Open VS Code.
+2. Navigate to Extensions (\`Ctrl+Shift+X\` or \`Cmd+Shift+X\`).
+3. Search for **SecretShield** and click **Install**.
+4. The extension activates automatically and begins real-time scanning on save.
+
+## Core Capabilities
+
+- ⚡ **Instant Real-Time Diagnostics**: Detects secrets as you work, surfacing inline red/yellow error squiggles with complete problem details.
+- 📁 **Dedicated Activity Bar Explorer**: Review all open workspace findings grouped by file and severity in a clean tree hierarchy.
+- 💡 **Rich Hover Tooltips**: Hover over flagged lines to inspect masked credential representations, Shannon entropy scores, and remediation guides.
+- 🔒 **100% Offline & Private**: Zero code transmitted over the network or sent to external cloud AI services.
+
+## Commands & Shortcuts
+
+Access these commands via the VS Code Command Palette (\`Ctrl+Shift+P\` or \`Cmd+Shift+P\`):
+
+- \`SecretShield: Scan Current File\` — Trigger an immediate on-demand scan of the active editor.
+- \`SecretShield: Scan Entire Workspace\` — Recursively audit all project files.
+- \`SecretShield: Focus Findings Sidebar\` — Jump directly to the findings tree view.
+- \`SecretShield: Clear All Findings\` — Reset active diagnostics and clear findings cache.
+
+## Configuration Settings
+
+Customize behavior in your \`settings.json\` or workspace \`.secretshield.json\`:
+
+\`\`\`json
+{
+  "secretshield.enabled": true,
+  "secretshield.scanOnSave": true,
+  "secretshield.severityThreshold": "LOW",
+  "secretshield.configPath": ".secretshield.json",
+  "secretshield.maxFileSize": 5242880
+}
+\`\`\`
 `,
   },
 

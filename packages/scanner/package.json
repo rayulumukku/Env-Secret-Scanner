@@ -1,20 +1,44 @@
 {
   "name": "@secretshield/scanner",
   "version": "2.0.0",
-  "description": "SecretShield detection engine — high-speed deterministic secret scanner",
+  "description": "Deterministic, privacy-first secret detection engine for modern developer workflows",
   "type": "module",
   "main": "./index.js",
   "exports": {
     ".": "./index.js",
-    "./rules": "./rules/index.js",
-    "./entropy": "./entropy.js",
-    "./masking": "./masking.js",
-    "./fingerprint": "./fingerprint.js",
-    "./confidence": "./confidence.js"
+    "./api": "./src/api.js",
+    "./rules": "./src/rules/index.js",
+    "./entropy": "./src/entropy.js",
+    "./masking": "./src/masking.js",
+    "./fingerprint": "./src/fingerprint.js",
+    "./confidence": "./src/confidence.js",
+    "./file-filter": "./src/file-filter.js",
+    "./regex-safety": "./src/regex-safety.js"
   },
+  "files": [
+    "index.js",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "test": "node --test __tests__/**/*.test.js"
   },
-  "keywords": ["secret-scanner", "security", "entropy", "detection"],
+  "keywords": [
+    "secret-scanner",
+    "credential-leak",
+    "security",
+    "entropy",
+    "api-key-detection",
+    "sast",
+    "git-secrets",
+    "pre-commit"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rayulumukku/Env-Secret-Scanner.git",
+    "directory": "packages/scanner"
+  },
+  "author": "SecretShield Contributors",
   "license": "MIT"
 }

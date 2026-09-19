@@ -7,13 +7,15 @@
  * Usage:
  *   secretshield scan [path]        Scan files
  *   secretshield scan --staged      Scan Git staged files
- *   secretshield scan --history     Scan Git history
+ *   secretshield scan --history     Scan Git commit history
+ *   secretshield scan --diff        Scan unified diff text from stdin or file
  *   secretshield scan --json        JSON output
  *   secretshield scan --sarif       SARIF 2.1.0 output
- *   secretshield ci                 CI mode (JSON + exit code)
+ *   secretshield init               Generate .secretshield.json configuration
+ *   secretshield rules [filter]     List rules (all, enabled, disabled)
+ *   secretshield benchmark          Run throughput performance benchmark
  *   secretshield baseline create    Create .secretshield-baseline.json
- *   secretshield baseline list      List baseline fingerprints
- *   secretshield baseline remove    Remove a fingerprint from baseline
+ *   secretshield baseline update    Update baseline file
  *   secretshield install-hook       Install Git pre-commit hook
  *
  * Security:
@@ -49,6 +51,7 @@ program
   .description('Scan files for exposed secrets')
   .option('--staged',    'Scan only Git staged files (for pre-commit use)')
   .option('--history',   'Also scan Git commit history')
+  .option('--diff [file]', 'Scan unified diff text from file or stdin')
   .option('--json',      'Output findings as JSON')
   .option('--sarif',     'Output findings as SARIF 2.1.0')
   .option('--quiet',     'Suppress informational output')
@@ -59,6 +62,30 @@ program
   .action(async (scanPath, opts) => {
     const { runScan } = await import('../lib/commands/scan.js');
     const exitCode = await runScan(scanPath || '.', opts);
+    process.exit(exitCode);
+  });
+
+// ── INIT COMMAND ──────────────────────────────────────────────────────────────
+program
+  .command('init')
+  .description('Initialize .secretshield.json configuration with setup instructions')
+  .option('--force', 'Overwrite existing configuration file')
+  .option('--severity <level>', 'Initial severity threshold (low, medium, high, critical)', 'low')
+  .action(async (opts) => {
+    const { initCommand } = await import('../lib/commands/init.js');
+    const exitCode = await initCommand(opts);
+    process.exit(exitCode);
+  });
+
+// ── RULES COMMAND ─────────────────────────────────────────────────────────────
+const rules = program
+  .command('rules [filter]')
+  .description('List and inspect available detection rules (filter: all, enabled, disabled)')
+  .option('--json', 'Output rules list as JSON')
+  .option('--config <file>', 'Path to configuration file')
+  .action(async (filter, opts) => {
+    const { rulesCommand } = await import('../lib/commands/rules.js');
+    const exitCode = await rulesCommand(filter || 'all', opts);
     process.exit(exitCode);
   });
 

@@ -1,0 +1,25 @@
+{
+  "name": "@secretshield/config",
+  "version": "2.0.0",
+  "description": "Shared configuration loader and validation schemas for SecretShield",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test __tests__/**/*.test.js"
+  },
+  "keywords": [
+    "secretshield",
+    "configuration",
+    "security-config"
+  ],
+  "author": "SecretShield Contributors",
+  "license": "MIT"
+}
