@@ -1,0 +1,20 @@
+{
+  "name": "@secretshield/scanner",
+  "version": "2.0.0",
+  "description": "SecretShield detection engine — high-speed deterministic secret scanner",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./rules": "./rules/index.js",
+    "./entropy": "./entropy.js",
+    "./masking": "./masking.js",
+    "./fingerprint": "./fingerprint.js",
+    "./confidence": "./confidence.js"
+  },
+  "scripts": {
+    "test": "node --test __tests__/**/*.test.js"
+  },
+  "keywords": ["secret-scanner", "security", "entropy", "detection"],
+  "license": "MIT"
+}

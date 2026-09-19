@@ -1,0 +1,25 @@
+{
+  "name": "@secretshield/cli",
+  "version": "2.0.0",
+  "description": "SecretShield CLI — detect secrets before they reach Git",
+  "type": "module",
+  "bin": {
+    "secretshield": "./bin/secretshield.js"
+  },
+  "scripts": {
+    "test": "node --test __tests__/**/*.test.js",
+    "test:all": "node --test __tests__/cli.test.js __tests__/sarif.test.js __tests__/baseline.test.js __tests__/config.test.js"
+  },
+  "dependencies": {
+    "commander": "^12.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "bin",
+    "lib"
+  ],
+  "keywords": ["security", "secrets", "git", "pre-commit", "cli"],
+  "license": "MIT"
+}
