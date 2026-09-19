@@ -307,3 +307,8 @@ export function scan({ files = [], customRules = [], allowlistFingerprints = [],
     errors,
   };
 }
+
+export function scanString(content, filename = 'inline', options = {}) {
+  return scan({ files: [{ name: filename, content }], ...options });
+}
+

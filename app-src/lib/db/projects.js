@@ -264,3 +264,6 @@ export function computeSecurityHealthScore({
     },
   };
 }
+
+export const getProjectById = findProjectById;
+

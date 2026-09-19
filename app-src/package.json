@@ -11,8 +11,9 @@
     "test:archive": "node --test lib/repository/__tests__/archive.test.js",
     "test:commits": "node --test lib/repository/__tests__/commit-scanner.test.js",
     "test:security": "node --test lib/scanner/__tests__/security.test.js",
+    "test:integrations": "node --test lib/providers/github/__tests__/github.test.js lib/providers/gitlab/__tests__/gitlab.test.js lib/providers/common/__tests__/events.test.js lib/jobs/__tests__/jobs.test.js lib/notifications/__tests__/slack.test.js lib/providers/__tests__/e2e-workflow.test.js",
     "test:platform": "node --test lib/auth/__tests__/auth.test.js lib/db/__tests__/isolation.test.js lib/db/__tests__/lifecycle.test.js lib/webhooks/__tests__/webhooks.test.js",
-    "test:all": "node --test lib/scanner/__tests__/scanner.test.js lib/repository/__tests__/archive.test.js lib/repository/__tests__/commit-scanner.test.js lib/scanner/__tests__/security.test.js lib/auth/__tests__/auth.test.js lib/db/__tests__/isolation.test.js lib/db/__tests__/lifecycle.test.js lib/webhooks/__tests__/webhooks.test.js",
+    "test:all": "node --test lib/scanner/__tests__/scanner.test.js lib/repository/__tests__/archive.test.js lib/repository/__tests__/commit-scanner.test.js lib/scanner/__tests__/security.test.js lib/auth/__tests__/auth.test.js lib/db/__tests__/isolation.test.js lib/db/__tests__/lifecycle.test.js lib/webhooks/__tests__/webhooks.test.js lib/providers/github/__tests__/github.test.js lib/providers/gitlab/__tests__/gitlab.test.js lib/providers/common/__tests__/events.test.js lib/jobs/__tests__/jobs.test.js lib/notifications/__tests__/slack.test.js lib/providers/__tests__/e2e-workflow.test.js",
     "test:watch": "node --test --watch lib/scanner/__tests__/scanner.test.js"
   },
   "dependencies": {

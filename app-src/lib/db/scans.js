@@ -121,3 +121,24 @@ export async function listScansByProject(projectId, limit = 20) {
       repository: memoryDb.repositories.get(s.repositoryId),
     }));
 }
+
+export async function updateScan(scanId, updates = {}) {
+  const { client, isPostgres } = await getDb();
+
+  if (isPostgres) {
+    return client.scan.update({
+      where: { scanId },
+      data: updates,
+    });
+  }
+
+  const scan = memoryDb.scans.get(scanId) || [...memoryDb.scans.values()].find(s => s.id === scanId);
+  if (!scan) return null;
+
+  Object.assign(scan, updates);
+  memoryDb.scans.set(scan.scanId, scan);
+  return scan;
+}
+
+export const createScan = createScanRecord;
+

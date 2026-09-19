@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { href: '/dashboard',          label: 'Dashboard' },
   { href: '/projects',           label: 'Projects' },
   { href: '/findings',           label: 'Findings' },
+  { href: '/integrations',       label: 'Integrations' },
   { href: '/scan',               label: 'Scanner' },
   { href: '/rules',              label: 'Rules' },
   { href: '/settings/members',   label: 'Team' },
@@ -201,3 +202,6 @@ export function Navbar() {
     </header>
   );
 }
+
+export default Navbar;
+

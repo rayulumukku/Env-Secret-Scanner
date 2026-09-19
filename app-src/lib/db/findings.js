@@ -236,3 +236,21 @@ export async function bulkUpdateFindings(findingIds, { status, note, userId }) {
   }
   return results;
 }
+
+export async function saveFindings(arg1, arg2, arg3, arg4) {
+  if (Array.isArray(arg1)) {
+    return saveScanFindings(arg1, arg2 || {});
+  }
+  // Called as saveFindings(scanId, projectId, repositoryId, findings)
+  const scanId = arg1;
+  const projectId = arg2;
+  const repositoryId = arg3;
+  const findings = arg4 || [];
+  return saveScanFindings(findings, { scanId, projectId, repositoryId });
+}
+
+export async function getFindings(options = {}) {
+  const res = await queryFindings(options);
+  return res?.findings || [];
+}
+

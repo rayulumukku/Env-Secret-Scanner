@@ -81,4 +81,13 @@ export async function getDb() {
   return { client: memoryDb, isPostgres: _isPostgres };
 }
 
+export function isDatabaseAvailable() {
+  return Boolean(process.env.DATABASE_URL);
+}
+
+export async function getPrismaClient() {
+  const { client } = await getDb();
+  return client;
+}
+
 export { memoryDb };

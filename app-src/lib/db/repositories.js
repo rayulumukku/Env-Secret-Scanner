@@ -124,3 +124,17 @@ export async function updateRepositoryScanTime(id, date = new Date()) {
   }
   return repo;
 }
+
+export async function getRepositoryByFullName(fullName) {
+  if (!fullName) return null;
+  const { client, isPostgres } = await getDb();
+
+  if (isPostgres) {
+    return client.repository.findFirst({
+      where: { fullName },
+    });
+  }
+
+  return [...memoryDb.repositories.values()].find(r => r.fullName === fullName) || null;
+}
+
