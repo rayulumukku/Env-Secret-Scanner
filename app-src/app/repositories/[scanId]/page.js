@@ -9,6 +9,8 @@ import {
   ChevronDown, X, Info, Eye, History, ExternalLink, Copy, Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { FindingStatus, FINDING_STATUS_LABELS } from '@/lib/models/index';
+import { useFindingStatus } from '@/lib/hooks/useFindingStatus';
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 
@@ -230,9 +232,28 @@ function FileTreeNode({ node, findingsByFile, onFileSelect, selectedFile, depth 
 
 function FindingDetailPanel({ finding, onClose }) {
   const [copied, setCopied] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
+  const [notes, setNotes] = useState('');
+  const { getStatus, setStatus } = useFindingStatus();
+
   if (!finding) return null;
   const cfg = SEVERITY_CONFIG[finding.severity] || SEVERITY_CONFIG.LOW;
   const remediation = getRemediation(finding);
+  const currentStatus = getStatus(finding.fingerprint);
+
+  const handleStatusChange = (newStatus) => {
+    if (newStatus === FindingStatus.REMEDIATED) {
+      setShowNotes(true);
+    } else {
+      setStatus(finding.fingerprint, newStatus, '');
+      setShowNotes(false);
+    }
+  };
+
+  const confirmRemediated = () => {
+    setStatus(finding.fingerprint, FindingStatus.REMEDIATED, notes);
+    setShowNotes(false);
+  };
 
   const copyFingerprint = () => {
     navigator.clipboard.writeText(finding.fingerprint || '');
@@ -353,6 +374,59 @@ function FindingDetailPanel({ finding, onClose }) {
           </div>
         </div>
 
+        {/* Finding Status */}
+        {finding.fingerprint && (
+          <div>
+            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+              Finding Status
+            </div>
+            <div className="grid grid-cols-2 gap-1.5 mb-2">
+              {Object.entries(FINDING_STATUS_LABELS).map(([statusKey, meta]) => (
+                <button
+                  key={statusKey}
+                  onClick={() => handleStatusChange(statusKey)}
+                  className={`px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                    currentStatus.status === statusKey
+                      ? `${meta.color} ${meta.bg} ${meta.border}`
+                      : 'text-muted-foreground border-border/50 hover:border-border hover:bg-secondary/40'
+                  }`}
+                >
+                  {meta.label}
+                </button>
+              ))}
+            </div>
+            {showNotes && (
+              <div className="space-y-2">
+                <textarea
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                  placeholder="Optional: describe what was done (e.g. Credential revoked and replaced)"
+                  rows={3}
+                  className="w-full text-xs bg-secondary/30 border border-border/50 rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                />
+                <div className="flex gap-2">
+                  <button onClick={confirmRemediated} className="px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 transition-colors">
+                    Confirm Remediated
+                  </button>
+                  <button onClick={() => setShowNotes(false)} className="px-3 py-1.5 text-xs font-medium rounded-lg border border-border/50 text-muted-foreground hover:bg-secondary/40 transition-colors">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+            {currentStatus.notes && !showNotes && (
+              <div className="text-xs text-muted-foreground bg-secondary/20 border border-border/40 rounded-lg px-3 py-2">
+                <span className="font-medium text-foreground">Notes:</span> {currentStatus.notes}
+              </div>
+            )}
+            {currentStatus.updatedAt && (
+              <div className="text-[10px] text-muted-foreground mt-1">
+                Updated {new Date(currentStatus.updatedAt).toLocaleString()}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Fingerprint */}
         {finding.fingerprint && (
           <div>
@@ -372,6 +446,7 @@ function FindingDetailPanel({ finding, onClose }) {
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

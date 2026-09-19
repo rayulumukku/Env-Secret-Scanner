@@ -7,11 +7,12 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
 const NAV_LINKS = [
-  { href: '/scan',         label: 'Scanner' },
-  { href: '/repositories', label: 'Repositories' },
-  { href: '/history',      label: 'History' },
-  { href: '/rules',        label: 'Rules' },
-  { href: '/docs',         label: 'Docs' },
+  { href: '/scan',               label: 'Scanner' },
+  { href: '/repositories',       label: 'Repositories' },
+  { href: '/repositories/github',label: 'GitHub' },
+  { href: '/history',            label: 'History' },
+  { href: '/rules',              label: 'Rules' },
+  { href: '/docs',               label: 'Docs' },
 ];
 
 export function Navbar() {
@@ -34,7 +35,7 @@ export function Navbar() {
               <span className="font-bold text-base tracking-tight text-foreground">
                 Secret<span className="text-primary">Shield</span>
               </span>
-              <div className="text-[10px] text-muted-foreground leading-none font-mono">v1.0 MVP</div>
+              <div className="text-[10px] text-muted-foreground leading-none font-mono">v2.0</div>
             </div>
           </Link>
 
