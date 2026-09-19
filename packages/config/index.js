@@ -43,6 +43,12 @@ export const DEFAULT_CONFIG = {
     maxFileSize: 2 * 1024 * 1024, // 2 MB
     maxFiles: 5000,
   },
+  policies: {
+    severityThreshold: 'high',
+    blockCritical: true,
+    blockHigh: false,
+    rules: []
+  }
 };
 
 export const VALID_SEVERITIES = new Set(['low', 'medium', 'high', 'critical']);
@@ -141,10 +147,88 @@ export function validateConfig(raw) {
     }
   }
 
+  // 6. Policy configuration
+  if (raw.policies && typeof raw.policies === 'object' && !Array.isArray(raw.policies)) {
+    config.policies = { ...config.policies, ...raw.policies };
+    if (raw.policies.severityThreshold) {
+      const pSev = String(raw.policies.severityThreshold).toLowerCase();
+      if (VALID_SEVERITIES.has(pSev)) {
+        config.policies.severityThreshold = pSev;
+      }
+    }
+  }
+
   return {
     valid: errors.length === 0,
     errors,
     config,
+  };
+}
+
+/**
+ * Evaluates findings against configured local policies.
+ * 
+ * @param {Array<Object>} findings 
+ * @param {Object} [config] 
+ * @returns {{ passed: boolean, violations: Array<Object>, summary: string }}
+ */
+export function evaluateLocalPolicies(findings = [], config = DEFAULT_CONFIG) {
+  const policies = config.policies || DEFAULT_CONFIG.policies;
+  const violations = [];
+
+  for (const f of findings) {
+    const sev = String(f.severity || 'LOW').toUpperCase();
+
+    // Critical block policy
+    if (policies.blockCritical && sev === 'CRITICAL') {
+      violations.push({
+        policy: 'Block Critical Secrets',
+        ruleId: f.ruleId || f.type,
+        severity: sev,
+        file: f.file,
+        line: f.line,
+        maskedValue: f.maskedValue || '••••••••',
+        reason: 'Critical severity finding detected in repository'
+      });
+    }
+
+    // High block policy
+    if (policies.blockHigh && sev === 'HIGH') {
+      violations.push({
+        policy: 'Block High Secrets',
+        ruleId: f.ruleId || f.type,
+        severity: sev,
+        file: f.file,
+        line: f.line,
+        maskedValue: f.maskedValue || '••••••••',
+        reason: 'High severity finding detected in repository'
+      });
+    }
+
+    // General severity threshold
+    if (policies.severityThreshold) {
+      const reqRank = SEVERITY_LEVELS[policies.severityThreshold.toLowerCase()] || 0;
+      const fRank = SEVERITY_LEVELS[sev.toLowerCase()] || 0;
+      if (fRank >= reqRank && !policies.blockCritical && !policies.blockHigh) {
+        violations.push({
+          policy: `Severity Threshold (${policies.severityThreshold.toUpperCase()})`,
+          ruleId: f.ruleId || f.type,
+          severity: sev,
+          file: f.file,
+          line: f.line,
+          maskedValue: f.maskedValue || '••••••••',
+          reason: `Finding severity ${sev} meets or exceeds threshold ${policies.severityThreshold.toUpperCase()}`
+        });
+      }
+    }
+  }
+
+  return {
+    passed: violations.length === 0,
+    violations,
+    summary: violations.length === 0
+      ? '✓ No policy violations detected.'
+      : `✕ ${violations.length} policy violation(s) detected.`
   };
 }
 

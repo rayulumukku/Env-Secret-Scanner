@@ -54,6 +54,8 @@ class MemoryStore {
     this.webhookDeliveries = [];
     this.notifications = new Map();
     this.auditLogs = [];
+    this.policies = new Map();
+    this.policyViolations = [];
   }
 }
 

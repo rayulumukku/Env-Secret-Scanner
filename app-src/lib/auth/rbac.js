@@ -43,10 +43,13 @@ export const PERMISSIONS = {
   FINDING_UPDATE:       ['OWNER', 'ADMIN', 'MEMBER'],
   FINDING_VIEW:         ['OWNER', 'ADMIN', 'MEMBER', 'VIEWER'],
 
-  // Rules, Baselines, Webhooks
+  // Rules, Baselines, Webhooks, Policies
   RULE_MANAGE:          ['OWNER', 'ADMIN'],
   BASELINE_MANAGE:      ['OWNER', 'ADMIN'],
   WEBHOOK_MANAGE:       ['OWNER', 'ADMIN'],
+  POLICY_MANAGE:        ['OWNER', 'ADMIN'],
+  POLICY_VIEW:          ['OWNER', 'ADMIN', 'MEMBER', 'VIEWER'],
+  POLICY_EVALUATE:      ['OWNER', 'ADMIN', 'MEMBER'],
   AUDIT_VIEW:           ['OWNER', 'ADMIN'],
 };
 

@@ -107,6 +107,25 @@ program
     process.exit(exitCode);
   });
 
+// ── POLICY COMMAND ────────────────────────────────────────────────────────────
+const policy = program
+  .command('policy')
+  .description('Enforce and audit organization security policies');
+
+policy
+  .command('check [path]')
+  .description('Evaluate security policies against repository findings')
+  .option('--dry-run',        'Evaluate policies without failing CI exit code')
+  .option('--config <file>',   'Path to configuration file')
+  .option('--baseline <file>', 'Baseline file to exclude known findings')
+  .option('--json',           'Output policy evaluation result as JSON')
+  .option('--verbose',        'Show detailed condition match trace')
+  .action(async (scanPath, opts) => {
+    const { runPolicyCheck } = await import('../lib/commands/policy.js');
+    const exitCode = await runPolicyCheck(scanPath || '.', opts);
+    process.exit(exitCode);
+  });
+
 // ── BASELINE COMMAND ──────────────────────────────────────────────────────────
 const baseline = program
   .command('baseline')
