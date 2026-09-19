@@ -1,0 +1,435 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── USER & AUTHENTICATION ─────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  name          String?
+  avatarUrl     String?
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions      Session[]
+  memberships   OrganizationMember[]
+  resolvedFindings Finding[]         @relation("ResolvedBy")
+  createdBaselines Baseline[]        @relation("CreatedBy")
+  createdAllowlists AllowlistEntry[] @relation("CreatedBy")
+  notifications Notification[]
+
+  @@index([email])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  token        String   @unique
+  expiresAt    DateTime
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+// ── ORGANIZATIONS & MEMBERSHIP ────────────────────────────────────────────────
+
+enum OrganizationRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum MemberStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+}
+
+model Organization {
+  id           String    @id @default(cuid())
+  name         String
+  slug         String    @unique
+  plan         String    @default("free")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  members      OrganizationMember[]
+  projects     Project[]
+  auditLogs    AuditLog[]
+  webhooks     Webhook[]
+  connections  ProviderConnection[]
+  customRules  CustomRule[]
+  baselines    Baseline[]
+  allowlists   AllowlistEntry[]
+  notifications Notification[]
+
+  @@index([slug])
+}
+
+model OrganizationMember {
+  id             String           @id @default(cuid())
+  organizationId String
+  userId         String
+  role           OrganizationRole @default(MEMBER)
+  status         MemberStatus     @default(ACTIVE)
+  invitedEmail   String?
+  joinedAt       DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([organizationId])
+  @@index([userId])
+}
+
+// ── PROJECTS & REPOSITORIES ───────────────────────────────────────────────────
+
+model Project {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  slug           String
+  description    String?
+  severityThreshold String @default("LOW")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  repositories   Repository[]
+  scans          Scan[]
+  findings       Finding[]
+  customRules    CustomRule[]
+  allowlists     AllowlistEntry[]
+  baselines      Baseline[]
+  webhooks       Webhook[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+}
+
+enum ProviderType {
+  GITHUB
+  GITLAB
+  LOCAL
+}
+
+model Repository {
+  id            String       @id @default(cuid())
+  projectId     String
+  provider      ProviderType @default(LOCAL)
+  externalId    String?
+  name          String
+  fullName      String
+  isPrivate     Boolean      @default(false)
+  defaultBranch String       @default("main")
+  htmlUrl       String?
+  description   String?
+  lastScannedAt DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  project       Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scans         Scan[]
+  findings      Finding[]
+
+  @@index([projectId])
+  @@index([fullName])
+}
+
+// ── SCANS & FINDINGS ──────────────────────────────────────────────────────────
+
+enum ScanStatus {
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+enum ScanMode {
+  CURRENT
+  HISTORY
+  FULL
+}
+
+model Scan {
+  id             String     @id @default(cuid())
+  scanId         String     @unique
+  projectId      String
+  repositoryId   String
+  status         ScanStatus @default(COMPLETED)
+  mode           ScanMode   @default(CURRENT)
+  branch         String?
+  commitHash     String?
+  durationMs     Int        @default(0)
+  filesScanned   Int        @default(0)
+  totalFindings  Int        @default(0)
+  criticalCount  Int        @default(0)
+  highCount      Int        @default(0)
+  mediumCount    Int        @default(0)
+  lowCount       Int        @default(0)
+  errorMessage   String?
+  scannedAt      DateTime   @default(now())
+
+  project        Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  repository     Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  findings       Finding[]
+
+  @@index([projectId])
+  @@index([repositoryId])
+  @@index([scanId])
+  @@index([scannedAt])
+}
+
+enum FindingSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum FindingStatus {
+  OPEN
+  CONFIRMED
+  FALSE_POSITIVE
+  IGNORED
+  REMEDIATED
+}
+
+model Finding {
+  id             String          @id @default(cuid())
+  scanId         String
+  projectId      String
+  repositoryId   String
+  fingerprint    String
+  ruleId         String
+  type           String
+  category       String
+  severity       FindingSeverity
+  confidence     Int             @default(50)
+  file           String
+  line           Int
+  column         Int?
+  maskedValue    String          // NEVER raw secrets. Always masked string e.g. "sk_live_••••••1234"
+  description    String
+  remediation    String?
+  signalsJson    String?         // Stored as JSON string
+  commitHash     String?
+  author         String?
+  commitDate     String?
+  status         FindingStatus   @default(OPEN)
+  resolvedAt     DateTime?
+  resolvedById   String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  scan           Scan            @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  repository     Repository      @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  resolvedBy     User?           @relation("ResolvedBy", fields: [resolvedById], references: [id], onDelete: SetNull)
+  history        FindingHistory[]
+
+  @@index([projectId])
+  @@index([repositoryId])
+  @@index([scanId])
+  @@index([fingerprint])
+  @@index([severity])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model FindingHistory {
+  id          String        @id @default(cuid())
+  findingId   String
+  status      FindingStatus
+  note        String?
+  changedById String?
+  createdAt   DateTime      @default(now())
+
+  finding     Finding       @relation(fields: [findingId], references: [id], onDelete: Cascade)
+
+  @@index([findingId])
+}
+
+// ── RULES, BASELINES & ALLOWLISTS ─────────────────────────────────────────────
+
+model CustomRule {
+  id             String          @id @default(cuid())
+  organizationId String
+  projectId      String?
+  ruleId         String          @unique
+  name           String
+  description    String?
+  pattern        String          // Regex pattern
+  severity       FindingSeverity @default(HIGH)
+  category       String          @default("Custom")
+  isEnabled      Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project        Project?        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([projectId])
+}
+
+model AllowlistEntry {
+  id             String       @id @default(cuid())
+  organizationId String
+  projectId      String?
+  fingerprint    String
+  reason         String?
+  createdById    String?
+  createdAt      DateTime     @default(now())
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project        Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy      User?        @relation("CreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([projectId])
+  @@index([fingerprint])
+}
+
+model Baseline {
+  id             String       @id @default(cuid())
+  organizationId String
+  projectId      String?
+  name           String       @default("Default Baseline")
+  description    String?
+  entriesJson    String       // Array of fingerprint entries in JSON format (never raw secrets)
+  activeCount    Int          @default(0)
+  createdById    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project        Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy      User?        @relation("CreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([projectId])
+}
+
+// ── INTEGRATIONS & WEBHOOKS ───────────────────────────────────────────────────
+
+model ProviderConnection {
+  id             String       @id @default(cuid())
+  organizationId String
+  provider       ProviderType
+  accountId      String
+  accountName    String
+  scopes         String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, provider, accountId])
+  @@index([organizationId])
+}
+
+model Webhook {
+  id             String            @id @default(cuid())
+  organizationId String
+  projectId      String?
+  url            String
+  secretHash     String            // HMAC secret stored as hashed or encrypted key
+  eventsJson     String            // JSON array of subscribed events
+  isEnabled      Boolean           @default(true)
+  lastDeliveredAt DateTime?
+  lastStatus     Int?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project        Project?          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  deliveries     WebhookDelivery[]
+
+  @@index([organizationId])
+  @@index([projectId])
+}
+
+model WebhookDelivery {
+  id           String   @id @default(cuid())
+  webhookId    String
+  event        String
+  payloadJson  String   // Masked payload only
+  status       String   // "SUCCESS" | "FAILED"
+  responseCode Int?
+  responseBody String?
+  durationMs   Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  webhook      Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId])
+}
+
+// ── NOTIFICATIONS & AUDIT LOG ─────────────────────────────────────────────────
+
+enum NotificationType {
+  CRITICAL_SECRET
+  HIGH_SECRET
+  SCAN_FAILED
+  REPO_DISCONNECTED
+  CI_FAILURE
+  MEMBER_INVITED
+}
+
+model Notification {
+  id             String           @id @default(cuid())
+  organizationId String
+  userId         String?
+  type           NotificationType
+  title          String
+  message        String
+  link           String?
+  isRead         Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([isRead])
+}
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String?
+  userEmail      String?
+  action         String   // e.g. "USER_LOGIN", "SCAN_CREATED", "FINDING_STATUS_CHANGED", "MEMBER_INVITED"
+  targetType     String   // e.g. "Scan", "Finding", "Project", "Member"
+  targetId       String?
+  metadataJson   String?  // JSON string of non-secret context
+  ipAddress      String?
+  createdAt      DateTime @default(now())
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([action])
+  @@index([targetType])
+  @@index([createdAt])
+}
