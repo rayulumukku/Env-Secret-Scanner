@@ -5,8 +5,12 @@
  * Exported safely for display in footer, health checks, documentation, and CLI sync.
  */
 
+export const SCANNER_VERSION = '2.1.0';
+export const RULE_VERSION = '2026.09.1';
+export const CONFIG_VERSION = '1.0.0';
+
 export const VERSION_INFO = {
-  version: '0.4.0',
+  version: '2.1.0',
   name: 'SecretShield',
   codename: 'Fortress',
   releaseDate: '2026-09-20',
@@ -14,6 +18,9 @@ export const VERSION_INFO = {
   repoUrl: 'https://github.com/rayulumukku/Env-Secret-Scanner',
   docsUrl: '/docs',
   changelogUrl: '/docs/getting-started',
+  scannerVersion: SCANNER_VERSION,
+  ruleVersion: RULE_VERSION,
+  configVersion: CONFIG_VERSION,
 };
 
 /**
