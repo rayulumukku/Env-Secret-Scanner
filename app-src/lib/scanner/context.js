@@ -210,9 +210,11 @@ export function analyseContext({ value = '', matchLine = '', surrounding = '', f
   }
 
   // Documentation context keywords (comment on same line or nearby)
+  const lineWithoutVal = lowerLine.replace(value.toLowerCase(), '');
+  const surroundingWithoutVal = lowerSurrounding.replace(value.toLowerCase(), '');
   const docKeywords = ['example', 'sample', 'placeholder', 'documentation', 'readme', 'tutorial', 'demo', 'fake', 'dummy'];
   const hasDocContext = docKeywords.some(kw =>
-    lowerLine.includes(kw) || lowerSurrounding.includes(kw)
+    new RegExp(`\\b${kw}\\b`, 'i').test(lineWithoutVal) || new RegExp(`\\b${kw}\\b`, 'i').test(surroundingWithoutVal)
   );
   if (hasDocContext) {
     signals.push({ label: 'Documentation/example context', score: -20, positive: false });

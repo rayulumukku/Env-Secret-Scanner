@@ -157,16 +157,18 @@ function processMatch(rule, matchData, lines, filename) {
   const surrounding = getSurroundingText(lines, lineIdx);
 
   // ── CONFIDENCE SCORING ───────────────────────────────────────────────
+  const lineWithoutVal = lineText.toLowerCase().replace(rawValue.toLowerCase(), '');
+  const surroundingWithoutVal = surrounding.toLowerCase().replace(rawValue.toLowerCase(), '');
   const docKeywords = ['example', 'sample', 'placeholder', 'documentation', 'readme', 'tutorial', 'demo', 'fake', 'dummy'];
   const isDocCtx = docKeywords.some(kw =>
-    lineText.toLowerCase().includes(kw) || surrounding.toLowerCase().includes(kw)
+    new RegExp(`\\b${kw}\\b`, 'i').test(lineWithoutVal) || new RegExp(`\\b${kw}\\b`, 'i').test(surroundingWithoutVal)
   );
 
   const testFilePats = [/\.(test|spec)\.[jt]sx?$/i, /_test\.(go|py|rb)$/i, /\/tests?\//i, /\/spec\//i];
   const isTestF = testFilePats.some(p => p.test(filename));
 
   const { confidence, severity, signals } = buildConfidence({
-    baseScore: 0,
+    baseScore: rule.isProviderRule ? 40 : 50,
     isProviderRule: rule.isProviderRule ?? false,
     hasSecretVarName: hasSecretVarName(lineText),
     isHighEntropy: highE,
@@ -174,7 +176,7 @@ function processMatch(rule, matchData, lines, filename) {
     entropy,
     hasSuspiciousAssignment: hasSuspiciousAssignment(lineText),
     isSensitiveFile: isSensitiveFile(filename),
-    hasNearbyKeyword: false, // analyseContext handles this
+    hasNearbyKeyword: false,
     isPlaceholder: placeholder,
     isDocContext: isDocCtx,
     isTestFile: isTestF,
@@ -183,24 +185,7 @@ function processMatch(rule, matchData, lines, filename) {
     extraSignals: rule.extraSignals ?? [],
   });
 
-  // Run additional context analysis and merge signals
-  const ctxResult = analyseContext({
-    value: rawValue,
-    matchLine: lineText,
-    surrounding,
-    filename,
-    baseConfidence: confidence,
-  });
-
-  // Merge context signals (deduplicate by label)
-  const mergedSignals = [...signals];
-  for (const sig of ctxResult.signals) {
-    if (!mergedSignals.find(s => s.label === sig.label)) {
-      mergedSignals.push(sig);
-    }
-  }
-
-  const finalConfidence = Math.max(0, Math.min(100, ctxResult.confidence));
+  const finalConfidence = Math.max(0, Math.min(100, confidence));
   const finalSeverity = rule.isProviderRule
     ? (finalConfidence < 20 ? 'LOW' : rule.severity)  // provider rules keep their severity unless clearly FP
     : severity;
@@ -225,7 +210,7 @@ function processMatch(rule, matchData, lines, filename) {
     maskedValue,
     description: rule.description,
     remediation: rule.remediation,
-    signals: mergedSignals,
+    signals,
     lineTextMasked: maskedLineText,
     contextLines: context.lines,
   };

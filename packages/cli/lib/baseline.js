@@ -20,8 +20,8 @@ import { resolve } from 'path';
 const DEFAULT_BASELINE_FILE = '.secretshield-baseline.json';
 const MAX_BASELINE_ENTRIES  = 10_000;
 
-// Fingerprint is a hex string (SHA-256 or similar hash)
-const FINGERPRINT_PATTERN = /^[a-f0-9]{8,128}$/i;
+// Fingerprint is a hash or formatted key (e.g. sha256 or prefix_hash)
+const FINGERPRINT_PATTERN = /^[a-z0-9_-]{8,128}$/i;
 
 // ── TYPES ─────────────────────────────────────────────────────────────────────
 

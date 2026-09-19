@@ -10,7 +10,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
-import { mkdirSync, writeFileSync, rmSync, existsSync } from 'fs';
+import { mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from 'fs';
 
 import { collectFiles, readFiles } from '../lib/scanner-bridge.js';
 import { getScanner }              from '../lib/scanner-bridge.js';
@@ -183,7 +183,7 @@ describe('Baseline CI workflow', () => {
   test('baseline create → CI pass with same findings', async () => {
     const scan = await getScanner();
     const dir  = createTestRepo({
-      '.env': 'AWS_KEY=AKIA' + 'FAKEKEYFAKEKEYFAKE\n',
+      '.env': 'AWS_KEY=AKIA' + 'FAKEKEYFAKEKEY12\n',
     });
     const baselineFile = join(tmpdir(), `baseline-test-${Date.now()}.json`);
 
@@ -214,7 +214,7 @@ describe('Baseline CI workflow', () => {
   test('new finding fails CI even with baseline', async () => {
     const scan = await getScanner();
     const dir  = createTestRepo({
-      '.env': 'AWS_KEY=AKIA' + 'FAKEKEYFAKEKEYFAKE\n',
+      '.env': 'AWS_KEY=AKIA' + 'FAKEKEYFAKEKEY12\n',
     });
     const baselineFile = join(tmpdir(), `baseline-test2-${Date.now()}.json`);
 
@@ -228,7 +228,6 @@ describe('Baseline CI workflow', () => {
       const entries = createBaselineFromFindings(result1.findings);
       saveBaseline(baselineFile, entries);
 
-      const { readFileSync } = require('fs');
       const baselineData = JSON.parse(readFileSync(baselineFile, 'utf8'));
       assert.ok(baselineData._note, 'saved baseline has _note about no raw secrets');
 

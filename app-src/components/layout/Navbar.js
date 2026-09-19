@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { href: '/dashboard',          label: 'Dashboard' },
   { href: '/projects',           label: 'Projects' },
   { href: '/findings',           label: 'Findings' },
+  { href: '/remediation',        label: 'Remediation' },
   { href: '/integrations',       label: 'Integrations' },
   { href: '/scan',               label: 'Scanner' },
   { href: '/rules',              label: 'Rules' },
