@@ -7,9 +7,11 @@ import { Input } from '@/components/ui/input';
 import { SeverityBadge } from '@/components/results/SeverityBadge';
 import { useCustomRules } from '@/lib/hooks/useCustomRules';
 import { useToast } from '@/components/ui/use-toast';
+import Link from 'next/link';
+import { validateRegexSafety } from '@/lib/scanner/regex-safety';
 import {
   Shield, Plus, Pencil, Trash2, Toggle3Right,
-  Code2, AlertTriangle, CheckCircle2, X, Save, Info
+  Code2, AlertTriangle, CheckCircle2, X, Save, Info, FlaskConical, Play
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -28,41 +30,44 @@ const BUILT_IN_RULES = [
 
 const SEVERITY_OPTIONS = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
 
-function isValidRegex(pattern) {
-  try {
-    new RegExp(pattern);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function RuleForm({ initial, onSave, onCancel }) {
   const [form, setForm] = useState(initial || {
     name: '', description: '', pattern: '', severity: 'HIGH', category: 'Custom', enabled: true,
   });
-  const [regexError, setRegexError] = useState('');
-
-  const validate = () => {
-    if (!form.name.trim()) return 'Name is required';
-    if (!form.pattern.trim()) return 'Pattern is required';
-    if (!isValidRegex(form.pattern)) return 'Invalid regular expression';
-    return null;
-  };
+  const [regexValidation, setRegexValidation] = useState(null);
+  const [testSample, setTestSample] = useState('');
+  const [testMatches, setTestMatches] = useState(null);
 
   const handlePatternChange = (val) => {
     setForm(f => ({ ...f, pattern: val }));
-    if (val && !isValidRegex(val)) {
-      setRegexError('Invalid regular expression');
+    if (val.trim()) {
+      const v = validateRegexSafety(val.trim());
+      setRegexValidation(v);
     } else {
-      setRegexError('');
+      setRegexValidation(null);
+    }
+  };
+
+  const handleTestMatch = () => {
+    if (!form.pattern.trim() || !regexValidation?.valid) return;
+    try {
+      const re = new RegExp(form.pattern.trim(), 'g');
+      const matches = testSample.match(re) || [];
+      setTestMatches(matches);
+    } catch {
+      setTestMatches([]);
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const err = validate();
-    if (err) { setRegexError(err); return; }
+    if (!form.name.trim()) return;
+    if (!form.pattern.trim()) return;
+    const v = validateRegexSafety(form.pattern.trim());
+    if (!v.valid) {
+      setRegexValidation(v);
+      return;
+    }
     onSave(form);
   };
 
@@ -92,20 +97,58 @@ function RuleForm({ initial, onSave, onCancel }) {
 
       <div>
         <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-          Regex Pattern *
+          Regex Pattern * (ReDoS Protected)
         </label>
         <Input
           value={form.pattern}
           onChange={e => handlePatternChange(e.target.value)}
           placeholder="e.g. MYAPP_[A-Z0-9]{32}"
-          className={cn('bg-secondary/50 h-8 text-sm font-mono', regexError && 'border-red-900/50')}
+          className={cn('bg-secondary/50 h-8 text-sm font-mono', regexValidation && !regexValidation.valid && 'border-red-900/50')}
           required
         />
-        {regexError && <p className="text-xs text-red-400 mt-1">{regexError}</p>}
-        {form.pattern && !regexError && (
-          <p className="text-xs text-primary mt-1 flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3" /> Valid regex
-          </p>
+        {regexValidation && (
+          <div className={cn(
+            'text-xs mt-1.5 flex items-center gap-1.5',
+            regexValidation.valid ? 'text-primary' : 'text-red-400'
+          )}>
+            {regexValidation.valid ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
+            <span>{regexValidation.valid ? 'ReDoS safe regex' : regexValidation.error}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Inline Test Sandbox */}
+      <div className="rounded-lg border border-border/40 bg-card/40 p-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+            <FlaskConical className="w-3 h-3 text-primary" />
+            Quick Test Pattern
+          </label>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-6 text-[11px] gap-1 px-2"
+            onClick={handleTestMatch}
+          >
+            <Play className="w-2.5 h-2.5 fill-current" />
+            Test Match
+          </Button>
+        </div>
+        <Input
+          value={testSample}
+          onChange={e => setTestSample(e.target.value)}
+          placeholder="Paste synthetic sample text to test this rule..."
+          className="bg-secondary/50 h-7 text-xs font-mono"
+        />
+        {testMatches !== null && (
+          <div className="text-[11px] text-muted-foreground">
+            {testMatches.length > 0 ? (
+              <span className="text-primary font-medium">✓ Found {testMatches.length} match(es)</span>
+            ) : (
+              <span className="text-muted-foreground">No matches found in sample text</span>
+            )}
+          </div>
         )}
       </div>
 
@@ -193,14 +236,22 @@ export default function RulesPage() {
               </p>
             </div>
           </div>
-          <Button
-            onClick={() => { setShowForm(true); setEditingId(null); }}
-            size="sm"
-            className="gap-1.5"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Add Rule
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link href="/rules/lab">
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                <FlaskConical className="w-3.5 h-3.5 text-primary" />
+                Rule Testing Lab
+              </Button>
+            </Link>
+            <Button
+              onClick={() => { setShowForm(true); setEditingId(null); }}
+              size="sm"
+              className="gap-1.5"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add Rule
+            </Button>
+          </div>
         </div>
 
         {/* Add rule form */}

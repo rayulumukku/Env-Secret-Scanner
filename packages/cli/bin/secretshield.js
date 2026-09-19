@@ -125,6 +125,17 @@ baseline
     process.exit(exitCode);
   });
 
+// ── BENCHMARK COMMAND ─────────────────────────────────────────────────────────
+program
+  .command('benchmark')
+  .description('Run synthetic throughput & rule latency benchmark')
+  .option('--files <count>', 'Number of synthetic files (default: 1000)', '1000')
+  .action(async (opts) => {
+    const { runBenchmarkCommand } = await import('../lib/commands/benchmark.js');
+    const exitCode = await runBenchmarkCommand(opts);
+    process.exit(exitCode);
+  });
+
 // ── INSTALL-HOOK COMMAND ──────────────────────────────────────────────────────
 program
   .command('install-hook')

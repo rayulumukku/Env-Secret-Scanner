@@ -14,11 +14,16 @@
  * maskedValue and entropy. They are never stored or returned.
  */
 
-import { shannonEntropy, isHighEntropySecret } from './entropy.js';
 import { maskSecret, maskSecretInLine, createMaskedContext } from './masking.js';
-import { isPlaceholder, analyseContext } from './context.js';
-import { buildConfidence } from './confidence.js';
-import { SENSITIVE_FILE_PATTERNS } from './context.js';
+import {
+  detectLanguage,
+  evaluateEntropy,
+  extractLanguageContext,
+  analyzeContextSignals,
+  analyzeFalsePositive,
+  calculateConfidence,
+  generateQuickFix,
+} from './intelligence/index.js';
 
 /**
  * Get the surrounding text (a few lines) around a line number.
@@ -31,52 +36,6 @@ function getSurroundingText(lines, lineIndex, radius = 3) {
   const start = Math.max(0, lineIndex - radius);
   const end = Math.min(lines.length - 1, lineIndex + radius);
   return lines.slice(start, end + 1).join('\n');
-}
-
-/**
- * Check if a line is inside a comment.
- * @param {string} line
- * @returns {boolean}
- */
-function isInComment(line) {
-  return /^\s*(\/\/|#|\/\*|\*|<!--)/.test(line);
-}
-
-/**
- * Check if an assignment pattern exists (= or : before the value).
- * @param {string} line
- * @returns {boolean}
- */
-function hasSuspiciousAssignment(line) {
-  return /(?:=|:)\s*['"`]?[A-Za-z0-9+/\-_]{10,}/.test(line);
-}
-
-/**
- * Check if the filename is sensitive.
- * @param {string} filename
- * @returns {boolean}
- */
-function isSensitiveFile(filename) {
-  return SENSITIVE_FILE_PATTERNS.some(p => p.test(filename));
-}
-
-/**
- * Check if a variable name in the line is secret-related.
- * @param {string} line
- * @returns {boolean}
- */
-function hasSecretVarName(line) {
-  const secretKeywords = [
-    'secret', 'password', 'passwd', 'pwd', 'token', 'apikey',
-    'api_key', 'private_key', 'auth', 'credential', 'access_key',
-    'client_secret', 'signing_key', 'webhook', 'refresh_token',
-  ];
-  const lower = line.toLowerCase();
-  return secretKeywords.some(kw => {
-    const varMatch = line.match(/(?:const|let|var|export)?\s*([A-Za-z_][A-Za-z0-9_]*)\s*[=:]/);
-    if (varMatch) return varMatch[1].toLowerCase().includes(kw);
-    return lower.includes(kw + ' =') || lower.includes(kw + '=') || lower.includes(kw + ':');
-  });
 }
 
 /**
@@ -133,67 +92,60 @@ function runRulePattern(rule, content, lines) {
 function processMatch(rule, matchData, lines, filename) {
   const { rawValue, line, column, lineText, lineIdx } = matchData;
 
-  // ── ENTROPY ANALYSIS ────────────────────────────────────────────────
-  const { isHighEntropy: highE, entropy } = isHighEntropySecret(rawValue, {
+  // 1. Language & File Role Intelligence
+  const fileRole = detectLanguage(filename, lines.slice(0, 10).join('\n'));
+
+  // 2. Multi-factor Entropy Analysis
+  const entropyEval = evaluateEntropy(rawValue, {
     threshold: rule.entropyThreshold ?? 3.5,
     minLength: rule.minLength ?? 8,
   });
-  const isVeryHighEntropy = entropy >= 5.0;
 
-  // Provider rules may require entropy
-  if (rule.requireHighEntropy && !highE) return null;
-  if (rule.minEntropy && entropy < rule.minEntropy && rawValue.length < 32) return null;
+  if (rule.requireHighEntropy && !entropyEval.isHighEntropy) return null;
+  if (rule.minEntropy && entropyEval.entropy < rule.minEntropy && rawValue.length < 32) return null;
 
-  // ── PLACEHOLDER CHECK ────────────────────────────────────────────────
-  const placeholder = isPlaceholder(rawValue);
-
-  // Hard skip if placeholder AND low-specificity rule
-  if (placeholder && !rule.isProviderRule) return null;
-
-  // ── MASKING ─────────────────────────────────────────────────────────
-  // SECURITY: mask immediately, only masked value survives beyond this point
-  const maskedValue = maskSecret(rawValue, rule.maskOptions ?? {});
-  const maskedLineText = maskSecretInLine(lineText, rawValue);
-  const surrounding = getSurroundingText(lines, lineIdx);
-
-  // ── CONFIDENCE SCORING ───────────────────────────────────────────────
-  const lineWithoutVal = lineText.toLowerCase().replace(rawValue.toLowerCase(), '');
-  const surroundingWithoutVal = surrounding.toLowerCase().replace(rawValue.toLowerCase(), '');
-  const docKeywords = ['example', 'sample', 'placeholder', 'documentation', 'readme', 'tutorial', 'demo', 'fake', 'dummy'];
-  const isDocCtx = docKeywords.some(kw =>
-    new RegExp(`\\b${kw}\\b`, 'i').test(lineWithoutVal) || new RegExp(`\\b${kw}\\b`, 'i').test(surroundingWithoutVal)
-  );
-
-  const testFilePats = [/\.(test|spec)\.[jt]sx?$/i, /_test\.(go|py|rb)$/i, /\/tests?\//i, /\/spec\//i];
-  const isTestF = testFilePats.some(p => p.test(filename));
-
-  const { confidence, severity, signals } = buildConfidence({
-    baseScore: rule.isProviderRule ? 40 : 50,
-    isProviderRule: rule.isProviderRule ?? false,
-    hasSecretVarName: hasSecretVarName(lineText),
-    isHighEntropy: highE,
-    isVeryHighEntropy,
-    entropy,
-    hasSuspiciousAssignment: hasSuspiciousAssignment(lineText),
-    isSensitiveFile: isSensitiveFile(filename),
-    hasNearbyKeyword: false,
-    isPlaceholder: placeholder,
-    isDocContext: isDocCtx,
-    isTestFile: isTestF,
-    isDummyValue: false,
-    isInComment: isInComment(lineText),
-    extraSignals: rule.extraSignals ?? [],
+  // 3. Deterministic False Positive Analysis
+  const fpEval = analyzeFalsePositive(rawValue, {
+    line: lineText,
+    filename,
+    envRisk: fileRole.envRisk,
   });
 
-  const finalConfidence = Math.max(0, Math.min(100, confidence));
-  const finalSeverity = rule.isProviderRule
-    ? (finalConfidence < 20 ? 'LOW' : rule.severity)  // provider rules keep their severity unless clearly FP
-    : severity;
+  // Hard skip if placeholder and not a provider rule
+  if (fpEval.isFalsePositive && !rule.isProviderRule) return null;
+
+  // 4. Language-Aware Syntactic Context
+  const langCtx = extractLanguageContext(lineText, fileRole.language);
+  const contextSignals = analyzeContextSignals({
+    line: lineText,
+    surrounding: getSurroundingText(lines, lineIdx),
+    language: fileRole.language,
+  });
+
+  // 5. Masking
+  const maskedValue = maskSecret(rawValue, rule.maskOptions ?? {});
+  const maskedLineText = maskSecretInLine(lineText, rawValue);
+
+  // 6. Confidence Scoring & Explainability
+  const confResult = calculateConfidence({
+    isProviderRule: rule.isProviderRule ?? false,
+    contextSignals,
+    entropySignals: entropyEval.signals,
+    falsePositiveSignals: fpEval.signals,
+    fileRole,
+    rule,
+  });
 
   // Skip very-low-confidence findings (likely FP)
-  if (finalConfidence < 20) return null;
+  if (confResult.confidence < 20) return null;
 
-  // ── MASKED CONTEXT ───────────────────────────────────────────────────
+  // 7. Developer Quick Fix Suggestions
+  const quickFix = generateQuickFix(
+    { variableName: langCtx.variableName, type: rule.type, ruleId: rule.id, maskedValue },
+    fileRole.language
+  );
+
+  // 8. Masked Context Lines
   const context = createMaskedContext(lines, line, rawValue);
 
   return {
@@ -202,15 +154,19 @@ function processMatch(rule, matchData, lines, filename) {
     type: rule.type,
     name: rule.name,
     category: rule.category,
-    severity: finalSeverity,
-    confidence: finalConfidence,
+    severity: confResult.severity,
+    confidence: confResult.confidence,
     file: filename,
     line,
     column,
     maskedValue,
     description: rule.description,
     remediation: rule.remediation,
-    signals,
+    signals: confResult.signals,
+    whyDetected: confResult.whyDetected,
+    quickFix,
+    language: fileRole.language,
+    variableName: langCtx.variableName || null,
     lineTextMasked: maskedLineText,
     contextLines: context.lines,
   };

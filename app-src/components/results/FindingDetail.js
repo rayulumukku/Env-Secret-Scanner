@@ -14,11 +14,13 @@ import {
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 
+import { ExplainabilityCard } from './ExplainabilityCard';
+
 /**
  * Finding detail panel — shown when a user clicks a row in the findings table.
  * NEVER shows raw secret values.
  */
-export function FindingDetail({ finding, isDemo, onClose, onMarkFalsePositive, onIgnorePattern }) {
+export function FindingDetail({ finding, isDemo, onClose, onMarkFalsePositive, onIgnorePattern, onSmartIgnore }) {
   const { toast } = useToast();
   const [tab, setTab] = useState('overview');
 
@@ -59,6 +61,11 @@ export function FindingDetail({ finding, isDemo, onClose, onMarkFalsePositive, o
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-semibold text-sm text-foreground">{finding.name}</h3>
               <SeverityBadge severity={finding.severity} />
+              {finding.occurrenceCount && finding.occurrenceCount > 1 && (
+                <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary">
+                  {finding.occurrenceCount} Occurrences
+                </Badge>
+              )}
               {isDemo && (
                 <Badge variant="outline" className="text-[10px] border-amber-800/50 text-amber-400 bg-amber-950/30">
                   ⚠ DEMO — NOT REAL
@@ -82,7 +89,7 @@ export function FindingDetail({ finding, isDemo, onClose, onMarkFalsePositive, o
 
       {/* Tabs */}
       <div className="flex border-b border-border/50">
-        {['overview', 'context', 'remediation'].map(t => (
+        {['overview', 'explainability', 'context', 'remediation'].map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -141,7 +148,31 @@ export function FindingDetail({ finding, isDemo, onClose, onMarkFalsePositive, o
                 </p>
               </div>
             </div>
+
+            {/* Occurrences breakdown if aggregated */}
+            {finding.occurrences && finding.occurrences.length > 1 && (
+              <div className="rounded-lg border border-border/50 bg-secondary/20 p-3 space-y-2">
+                <span className="text-xs font-semibold text-foreground">
+                  Grouped Occurrences ({finding.occurrences.length})
+                </span>
+                <div className="space-y-1">
+                  {finding.occurrences.map((occ, idx) => (
+                    <div key={idx} className="text-xs flex items-center justify-between text-muted-foreground font-mono">
+                      <span>{occ.file}:{occ.line}</span>
+                      <span className="text-primary">{occ.maskedValue}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
+        )}
+
+        {tab === 'explainability' && (
+          <ExplainabilityCard
+            finding={finding}
+            onSmartIgnore={onSmartIgnore || onMarkFalsePositive}
+          />
         )}
 
         {tab === 'context' && (

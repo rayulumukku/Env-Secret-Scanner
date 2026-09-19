@@ -100,6 +100,9 @@ function sanitizeFilename(filename) {
 
 // ── CUSTOM RULE RUNNER ──────────────────────────────────────────────────────
 
+import { validateRegexSafety, safeRegexExec } from './regex-safety.js';
+import { groupSimilarFindings } from './intelligence/similarity.js';
+
 /**
  * Apply user-defined custom rules to file content.
  * SECURITY: Never log or store rawValue outside this function.
@@ -118,60 +121,51 @@ function applyCustomRules(content, filename, customRules) {
   for (const rule of customRules) {
     if (!rule.enabled || !rule.pattern) continue;
 
-    let regex;
-    try {
-      regex = new RegExp(rule.pattern, 'g');
-    } catch {
-      continue; // Invalid regex
-    }
+    const validation = validateRegexSafety(rule.pattern, 'g');
+    if (!validation.valid || !validation.safeRegex) continue;
 
-    let match;
-    const start = Date.now();
-    try {
-      while ((match = regex.exec(content)) !== null) {
-        if (Date.now() - start > 5000) break; // ReDoS guard
+    const matches = safeRegexExec(validation.safeRegex, content, 2000);
 
-        const rawValue = match[0];
-        if (!rawValue || rawValue.length < 4) continue;
+    for (const match of matches) {
+      const rawValue = match[0];
+      if (!rawValue || rawValue.length < 4) continue;
 
-        const upToMatch = content.slice(0, match.index);
-        const lineIdx = upToMatch.split('\n').length - 1;
-        const lastNewline = upToMatch.lastIndexOf('\n');
-        const column = match.index - lastNewline;
-        const line = lineIdx + 1;
+      const upToMatch = content.slice(0, match.index);
+      const lineIdx = upToMatch.split('\n').length - 1;
+      const lastNewline = upToMatch.lastIndexOf('\n');
+      const column = match.index - lastNewline;
+      const line = lineIdx + 1;
 
-        // SECURITY: mask immediately
-        const len = rawValue.length;
-        const maskedValue = len <= 8
-          ? '•'.repeat(Math.min(len, 8))
-          : rawValue.slice(0, 4) + '•'.repeat(Math.min(len - 8, 12)) + rawValue.slice(-4);
+      // SECURITY: mask immediately
+      const len = rawValue.length;
+      const maskedValue = len <= 8
+        ? '•'.repeat(Math.min(len, 8))
+        : rawValue.slice(0, 4) + '•'.repeat(Math.min(len - 8, 12)) + rawValue.slice(-4);
 
-        const lineText = lines[lineIdx] || '';
-        const maskedLineText = maskSecretInLine(lineText, rawValue);
+      const lineText = lines[lineIdx] || '';
+      const maskedLineText = maskSecretInLine(lineText, rawValue);
 
-        findings.push({
-          id: generateFindingId(),
-          ruleId: `CUSTOM_${rule.id || 'RULE'}`,
-          type: `CUSTOM_${rule.id || 'RULE'}`,
-          name: rule.name || 'Custom Rule',
-          category: rule.category || 'Custom',
-          severity: rule.severity || 'MEDIUM',
-          confidence: 75,
-          line,
-          column,
-          file: filename,
-          maskedValue,
-          description: rule.description || 'Custom rule match.',
-          remediation: 'Review according to your organization\'s security policy.',
-          signals: [{ label: 'Custom rule match', score: 75, positive: true }],
-          lineTextMasked: maskedLineText,
-          contextLines: [],
-          isCustomRule: true,
-          customRuleId: rule.id,
-        });
-      }
-    } catch {
-      // regex execution error
+      findings.push({
+        id: generateFindingId(),
+        ruleId: `CUSTOM_${rule.id || 'RULE'}`,
+        type: `CUSTOM_${rule.id || 'RULE'}`,
+        name: rule.name || 'Custom Rule',
+        category: rule.category || 'Custom',
+        severity: rule.severity || 'MEDIUM',
+        confidence: 75,
+        line,
+        column,
+        file: filename,
+        maskedValue,
+        description: rule.description || 'Custom rule match.',
+        remediation: rule.remediation || 'Review according to your organization\'s security policy.',
+        signals: [{ label: 'Custom rule match', score: 75, positive: true }],
+        whyDetected: ['Matches user-defined custom rule pattern'],
+        lineTextMasked: maskedLineText,
+        contextLines: [],
+        isCustomRule: true,
+        customRuleId: rule.id,
+      });
     }
   }
 
@@ -278,10 +272,30 @@ export function scan({ files = [], customRules = [], allowlistFingerprints = [],
   const allowlisted = allFindings.filter(f => f.isAllowlisted);
   const duration = Date.now() - startTime;
 
+  // Check .gitignore status for exposed .env files
+  const gitignoreFile = files.find(f => (f.name || '').endsWith('.gitignore'));
+  const gitignoreContent = gitignoreFile?.content || '';
+  const ignoresEnv = /^\.env(\*|\.|$|\/)/m.test(gitignoreContent) || /^\*\.env/m.test(gitignoreContent);
+
+  for (const f of active) {
+    if ((f.file || '').includes('.env') && !(f.file || '').includes('.example')) {
+      f.isGitTrackedRisk = true;
+      f.isGitIgnored = ignoresEnv;
+      f.gitIgnoreStatus = ignoresEnv ? 'IGNORED' : 'NOT_IGNORED';
+      if (!ignoresEnv) {
+        f.gitIgnoreWarning = 'Exposed .env file is not listed in .gitignore. Add .env to .gitignore immediately.';
+      }
+    }
+  }
+
+  // Collapse into parent secret groups (1 secret -> multiple occurrences)
+  const groupedFindings = groupSimilarFindings(active);
+
   const statistics = {
     filesScanned: scannedFiles.length,
     filesSkipped: skippedFiles.length,
     totalFindings: active.length,
+    totalSecrets: groupedFindings.length,
     critical: active.filter(f => f.severity === 'CRITICAL').length,
     high: active.filter(f => f.severity === 'HIGH').length,
     medium: active.filter(f => f.severity === 'MEDIUM').length,
@@ -301,6 +315,7 @@ export function scan({ files = [], customRules = [], allowlistFingerprints = [],
     // Keep stats as alias for backwards compat with existing UI
     stats: statistics,
     findings: active,
+    groupedFindings,
     allowlistedFindings: allowlisted,
     scannedFiles,
     skippedFiles,
