@@ -53,8 +53,8 @@ const FEATURES = [
   },
   {
     icon: Terminal,
-    title: 'CI/CD Ready',
-    desc: 'Designed to become a standalone npm package and GitHub Actions workflow.',
+    title: 'CLI & Pre-Commit Hooks',
+    desc: 'Run secret checks locally via standalone CLI, pre-commit Git hooks, and automated GitHub Actions workflows with SARIF 2.1.0 output.',
   },
 ];
 

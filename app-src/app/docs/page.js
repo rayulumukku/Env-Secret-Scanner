@@ -192,6 +192,58 @@ Content-Type: application/json
     ],
   },
   {
+    id: 'cli',
+    icon: Terminal,
+    title: 'Developer CLI & Git Hook',
+    content: [
+      {
+        type: 'text',
+        text: 'SecretShield provides a standalone CLI tool (@secretshield/cli) to scan files locally and prevent secrets from ever being committed to Git.',
+      },
+      {
+        type: 'code',
+        code: `# Install CLI globally or in your repository
+npm install -g @secretshield/cli
+
+# Scan current directory
+secretshield scan .
+
+# Scan specific files or subdirectories
+secretshield scan ./src --json
+
+# Install pre-commit hook (blocks commits with HIGH or CRITICAL secrets)
+secretshield install-hook`,
+      },
+      {
+        type: 'text',
+        text: 'The pre-commit hook runs in milliseconds across Git staged files before each commit. If any high-confidence secrets are detected, the commit is blocked before reaching your remote repository.',
+      },
+    ],
+  },
+  {
+    id: 'cicd',
+    icon: GitBranch,
+    title: 'CI/CD & SARIF 2.1.0',
+    content: [
+      {
+        type: 'text',
+        text: 'Integrate SecretShield directly into GitHub Actions, GitLab CI, or any pipeline. Output SARIF 2.1.0 reports for GitHub Advanced Security code scanning alerts.',
+      },
+      {
+        type: 'code',
+        code: `# Run in CI mode (exits 1 if findings meet threshold)
+secretshield ci --fail-on high
+
+# Export SARIF 2.1.0 report for GitHub Code Scanning
+secretshield scan . --sarif > secretshield-results.sarif
+
+# Manage legacy accepted findings via baselines
+secretshield baseline create
+secretshield ci --baseline .secretshield-baseline.json`,
+      },
+    ],
+  },
+  {
     id: 'faq',
     icon: BookOpen,
     title: 'FAQ',
@@ -201,11 +253,11 @@ Content-Type: application/json
         items: [
           {
             q: 'Does SecretShield send my code anywhere?',
-            a: 'No. Scanning runs on your own Next.js server (or Vercel deployment). Your code is not sent to any third-party service.',
+            a: 'No. Scanning runs entirely locally in memory or on your own server. Your code is never sent to any third-party AI or cloud service.',
           },
           {
             q: 'Can I use this in CI/CD?',
-            a: 'The scanner engine is designed to become a standalone npm package. CLI and GitHub Actions integration are coming soon.',
+            a: 'Yes! SecretShield includes a standalone CLI with `secretshield ci`, SARIF 2.1.0 export, and GitHub Actions workflows.',
           },
           {
             q: 'Why are secrets masked in results?',
@@ -217,7 +269,7 @@ Content-Type: application/json
           },
           {
             q: 'How do I reduce false positives?',
-            a: 'Mark findings as "False Positive" to add them to your allowlist. You can also increase the entropy threshold in Settings.',
+            a: 'Mark findings as "False Positive" to add them to your allowlist, or create a baseline via `secretshield baseline create`. You can also adjust entropy thresholds in Settings.',
           },
         ],
       },
