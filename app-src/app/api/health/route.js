@@ -1,39 +1,22 @@
 /**
  * app/api/health/route.js
  *
- * Public unauthenticated system health probe.
+ * Safe Public System Health Probe.
  *
  * SAFETY RULES:
- * Returns ONLY safe high-level availability status.
- * NEVER leaks environment variables, credentials, secrets, tokens, or stack traces.
+ *   - Returns ONLY safe high-level status, version, and timestamp.
+ *   - NEVER leaks environment variables, credentials, secrets, tokens, or internal paths.
  */
 
 import { NextResponse } from 'next/server';
 import { getAppVersion } from '@/lib/version';
-import { getDb } from '@/lib/db/client';
 
 export async function GET() {
-  const startTime = Date.now();
-  let dbStatus = 'disconnected';
-
-  try {
-    const { isPostgres } = await getDb();
-    dbStatus = isPostgres ? 'connected' : 'in-memory-active';
-  } catch {
-    dbStatus = 'unavailable';
-  }
-
-  const responseTimeMs = Date.now() - startTime;
-
   return NextResponse.json(
     {
-      status: 'healthy',
+      status: 'ok',
       version: getAppVersion(),
-      scanner: 'available',
-      database: dbStatus,
-      responseTimeMs,
       timestamp: new Date().toISOString(),
-      uptimeSeconds: Math.floor(process.uptime ? process.uptime() : 0),
     },
     {
       status: 200,

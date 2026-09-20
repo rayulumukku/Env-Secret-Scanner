@@ -45,6 +45,14 @@ export const DOC_SECTIONS = [
       { slug: 'faq', title: 'Technical FAQ', description: 'Answers to frequently asked architecture and performance questions.' },
     ],
   },
+  {
+    category: 'Operations & Reliability',
+    items: [
+      { slug: 'operations/backups', title: 'Database Backups & Recovery', description: 'Backup schedules, logical dumps, and point-in-time recovery.' },
+      { slug: 'operations/disaster-recovery', title: 'Disaster Recovery Playbook', description: 'Runbooks for process crashes, database failure, and credential rotation.' },
+      { slug: 'operations/deployment-checklist', title: 'Production Pre-Flight Checklist', description: 'Mandatory verification checklist prior to launching to production.' },
+    ],
+  },
 ];
 
 export const DOC_PAGES = {

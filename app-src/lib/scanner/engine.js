@@ -273,7 +273,7 @@ export function scan({ files = [], customRules = [], allowlistFingerprints = [],
   const duration = Date.now() - startTime;
 
   // Check .gitignore status for exposed .env files
-  const gitignoreFile = files.find(f => (f.name || '').endsWith('.gitignore'));
+  const gitignoreFile = Array.isArray(files) ? files.find(f => typeof f?.name === 'string' && f.name.endsWith('.gitignore')) : null;
   const gitignoreContent = gitignoreFile?.content || '';
   const ignoresEnv = /^\.env(\*|\.|$|\/)/m.test(gitignoreContent) || /^\*\.env/m.test(gitignoreContent);
 
@@ -323,10 +323,23 @@ export function scan({ files = [], customRules = [], allowlistFingerprints = [],
   };
 }
 
-export function scanString(content, filename = 'inline', options = {}) {
-  return scan({ files: [{ name: filename, content }], ...options });
+export function scanString(content, filenameOrOptions = 'inline', maybeOptions = {}) {
+  let filename = 'inline';
+  let opts = {};
+
+  if (typeof filenameOrOptions === 'string') {
+    filename = filenameOrOptions;
+    opts = maybeOptions || {};
+  } else if (typeof filenameOrOptions === 'object' && filenameOrOptions !== null) {
+    filename = filenameOrOptions.filename || filenameOrOptions.name || 'inline';
+    opts = filenameOrOptions;
+  }
+
+  return scan({ files: [{ name: filename, content }], ...opts });
 }
 
+export const scanText = scanString;
 export const scanSync = scan;
 export { runRules as detectInContent };
+
 

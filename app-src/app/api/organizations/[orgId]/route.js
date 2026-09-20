@@ -48,3 +48,31 @@ export async function PATCH(req, { params }) {
 
   return jsonSuccess(updated);
 }
+
+export async function DELETE(req, { params }) {
+  const { orgId } = await params;
+  const auth = await getAuthContext(req, { targetOrgId: orgId, requiredPermission: 'ORG_DELETE' });
+  if (!auth.authenticated) return jsonUnauthorized(auth.error);
+  if (auth.error) return jsonForbidden(auth.error);
+
+  // Invariant: Only Organization OWNER can delete organization
+  if (auth.membership?.role !== 'OWNER') {
+    return jsonForbidden('Only organization owners can delete an organization.');
+  }
+
+  const { deleteOrganization } = await import('@/lib/db/organizations');
+  await deleteOrganization(orgId);
+
+  await logAuditEvent({
+    organizationId: orgId,
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    action: 'ORGANIZATION_DELETED',
+    targetType: 'Organization',
+    targetId: orgId,
+    metadata: { orgId },
+  });
+
+  return jsonSuccess({ message: 'Organization and associated resources deleted successfully' });
+}
+

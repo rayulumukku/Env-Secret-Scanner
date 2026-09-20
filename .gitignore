@@ -17,12 +17,18 @@ coverage/
 
 # Misc
 .DS_Store
-*.pem
+# Environment & Secrets (NEVER COMMIT SENSITIVE ENV FILES)
 .env
+.env.*
+*.env
+!.env.example
 .env.local
 .env.development.local
 .env.test.local
+.env.staging
+.env.production
 .env.production.local
+
 
 # Vercel
 .vercel/

@@ -14,7 +14,12 @@
     "test:cli": "npm test --workspace=@secretshield/cli",
     "test:config": "npm test --workspace=@secretshield/config",
     "test:vscode": "npm test --workspace=secretshield-vscode",
+    "test:smoke": "node scripts/smoke-test.js",
+    "test:load": "node scripts/load-test.js",
     "build:web": "npm run build --workspace=secretshield-web",
+    "db:migrate": "node scripts/migrate.js",
+    "db:generate": "npx prisma generate --schema=app-src/prisma/schema.prisma",
+    "db:seed": "node scripts/migrate.js",
     "lint": "echo 'All packages clean'"
   },
   "description": "SecretShield — unified secret detection ecosystem for developers"
