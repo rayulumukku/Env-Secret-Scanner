@@ -58,8 +58,18 @@ export function analyzeFalsePositive(token = '', context = {}) {
     return { isFalsePositive: true, reason: 'Template placeholder syntax', penalty: -40, signals };
   }
 
-  // 2. Exact placeholder matches (full string equals placeholder)
-  if (PLACEHOLDER_TERMS.includes(lowerToken)) {
+  // 2. Exact placeholder matches or prefix/suffix patterns
+  if (
+    PLACEHOLDER_TERMS.includes(lowerToken) ||
+    lowerToken.startsWith('your_') ||
+    lowerToken.startsWith('your-') ||
+    lowerToken.endsWith('_here') ||
+    lowerToken.endsWith('-here') ||
+    lowerToken.includes('placeholder') ||
+    lowerToken.includes('user:password@') ||
+    lowerToken.includes('user:pass@') ||
+    lowerToken.includes('postgres:postgres@')
+  ) {
     signals.push({ label: `Known placeholder value (${lowerToken})`, score: -40, positive: false });
     return { isFalsePositive: true, reason: 'Known placeholder term', penalty: -40, signals };
   }

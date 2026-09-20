@@ -1,6 +1,6 @@
 {
   "name": "@secretshield/scanner",
-  "version": "2.0.0",
+  "version": "1.0.0",
   "description": "Deterministic, privacy-first secret detection engine for modern developer workflows",
   "type": "module",
   "main": "./index.js",

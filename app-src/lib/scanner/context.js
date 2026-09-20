@@ -110,6 +110,7 @@ export function isPlaceholder(value) {
     'notset', 'not_set',
     'secret123', 'password123', 'test123',
     'passw0rd', 'p@ssword',
+    'my_secret_key', 'my_secret', 'my_api_key',
     // Compound placeholder prefixes: example_key, fake_token, sample_secret, dummy_value
     'example', 'sample', 'dummy', 'fake',
   ];

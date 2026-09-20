@@ -111,8 +111,8 @@ function processMatch(rule, matchData, lines, filename) {
     envRisk: fileRole.envRisk,
   });
 
-  // Hard skip if placeholder and not a provider rule
-  if (fpEval.isFalsePositive && !rule.isProviderRule) return null;
+  // Hard skip if placeholder or template pattern
+  if (fpEval.isFalsePositive) return null;
 
   // 4. Language-Aware Syntactic Context
   const langCtx = extractLanguageContext(lineText, fileRole.language);
