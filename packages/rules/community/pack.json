@@ -1,0 +1,98 @@
+{
+  "id": "community-rules",
+  "name": "Community Verified Rule Pack",
+  "version": "1.0.0",
+  "description": "Community-contributed and verified detection rules for third-party developer platforms including Discord, Twilio, SendGrid, and Datadog.",
+  "author": "SecretShield Open Source Community",
+  "license": "MIT",
+  "minimumScannerVersion": "1.0.0",
+  "rules": [
+    {
+      "id": "discord-bot-token",
+      "name": "Discord Bot Token",
+      "description": "Discord application bot authentication token",
+      "provider": "Discord",
+      "category": "Communication",
+      "severity": "HIGH",
+      "confidence": 95,
+      "version": "1.0.0",
+      "author": "community-contributor",
+      "license": "MIT",
+      "documentationUrl": "https://discord.com/developers/docs/topics/oauth2",
+      "patterns": [
+        "[MN][A-Za-z\\d]{23,26}\\.[A-Za-z\\d-_]{6}\\.[A-Za-z\\d-_]{27,38}"
+      ],
+      "keywords": [
+        "DISCORD_TOKEN",
+        "discord.js",
+        "client.login"
+      ],
+      "testFixtures": {
+        "positive": [
+          "const client = new Client(); client.login('M00000000000000000000000.EXAMPLE.000000000000000000000000000');"
+        ],
+        "negative": [
+          "client.login(process.env.DISCORD_TOKEN);"
+        ]
+      }
+    },
+    {
+      "id": "twilio-api-key",
+      "name": "Twilio API Key",
+      "description": "Twilio authentication token starting with SK",
+      "provider": "Twilio",
+      "category": "Communication",
+      "severity": "CRITICAL",
+      "confidence": 96,
+      "version": "1.0.0",
+      "author": "community-contributor",
+      "license": "MIT",
+      "documentationUrl": "https://www.twilio.com/docs/iam/api-keys",
+      "patterns": [
+        "SK[0-9a-fA-F]{32}"
+      ],
+      "keywords": [
+        "SK",
+        "TWILIO_API_KEY",
+        "TWILIO_AUTH_TOKEN"
+      ],
+      "testFixtures": {
+        "positive": [
+          "TWILIO_API_KEY=SK11112222333344445555666677778888"
+        ],
+        "negative": [
+          "TWILIO_API_KEY=SK_placeholder"
+        ]
+      }
+    },
+    {
+      "id": "sendgrid-api-key",
+      "name": "SendGrid API Key",
+      "description": "SendGrid email delivery service token starting with SG.",
+      "provider": "SendGrid",
+      "category": "Communication",
+      "severity": "CRITICAL",
+      "confidence": 96,
+      "version": "1.0.0",
+      "author": "community-contributor",
+      "license": "MIT",
+      "documentationUrl": "https://docs.sendgrid.com/for-developers/sending-email/api-getting-started",
+      "patterns": [
+        "SG\\.[a-zA-Z0-9_\\-]{22}\\.[a-zA-Z0-9_\\-]{43}"
+      ],
+      "keywords": [
+        "SG.",
+        "SENDGRID_API_KEY"
+      ],
+      "testFixtures": {
+        "positive": [
+          "SENDGRID_API_KEY=SG.1111222233334444555566.1111222233334444555566667777888899990000111"
+        ],
+        "negative": [
+          "SENDGRID_API_KEY=SG.short.token"
+        ]
+      }
+    }
+  ],
+  "integrity": "sha256-b19e3663a8e9a0a0112cd32d0325a7435357036de784060445966de328a2772b"
+}

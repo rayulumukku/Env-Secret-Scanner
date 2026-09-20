@@ -1,0 +1,566 @@
+{
+  "id": "core-rules",
+  "name": "SecretShield Core Rules",
+  "version": "1.0.0",
+  "description": "Comprehensive first-party detection rules covering modern cloud providers, AI platforms, databases, and private credentials.",
+  "author": "SecretShield Core Team",
+  "license": "Apache-2.0",
+  "minimumScannerVersion": "1.0.0",
+  "rules": [
+    {
+      "id": "aws-access-key-id",
+      "name": "AWS Access Key ID",
+      "description": "20-character AWS standard access key identifier starting with AKIA or ASIA",
+      "provider": "AWS",
+      "category": "Cloud",
+      "severity": "HIGH",
+      "confidence": 95,
+      "version": "1.0.0",
+      "author": "SecretShield Team",
+      "license": "Apache-2.0",
+      "documentationUrl": "https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html",
+      "patterns": [
+        "(?:A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}"
+      ],
+      "keywords": [
+        "AKIA",
+        "ASIA",
+        "AWS_ACCESS_KEY_ID",
+        "aws_access_key"
+      ],
+      "fileTypes": [
+        "js",
+        "ts",
+        "py",
+        "env",
+        "json",
+        "yaml",
+        "yml",
+        "tf"
+      ],
+      "exclusions": [
+        "AKIAIOSFODNN7EXAMPLE",
+        "AKIAXXXXXXXXXXXXXXXX"
+      ],
+      "entropy": {
+        "min": 3,
+        "type": "shannon"
+      },
+      "testFixtures": {
+        "positive": [
+          "AWS_ACCESS_KEY_ID=AKIAEXAMPLEKEY123456",
+          "const key = 'AKIA1234567890ABCDEF';"
+        ],
+        "negative": [
+          "AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE",
+          "const dummy = 'NOT_AN_AWS_KEY';"
+        ]
+      }
+    },
+    {
+      "id": "aws-secret-access-key",
+      "name": "AWS Secret Access Key",
+      "description": "40-character base64-encoded secret access key paired with AWS access keys",
+      "provider": "AWS",
+      "category": "Cloud",
+      "severity": "CRITICAL",
+      "confidence": 92,
+      "version": "1.0.0",
+      "author": "SecretShield Team",
+      "license": "Apache-2.0",
+      "documentationUrl": "https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html",
+      "patterns": [
+        "(?i)(?:aws_secret_access_key|aws_secret_key|secret_access_key)\\s*[:=]\\s*['\"]?([A-Za-z0-9/+=]{40})['\"]?"
+      ],
+      "keywords": [
+        "aws_secret_access_key",
+        "secret_access_key"
+      ],
+      "testFixtures": {
+        "positive": [
+          "aws_secret_access_key = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'"
+        ],
+        "negative": [
+          "aws_secret_access_key = 'CHANGEME_OR_USE_ENV_VAR'"
+        ]
+      }
+    },
+    {
+      "id": "google-api-key",
+      "name": "Google Cloud API Key",
+      "description": "39-character AIza Google Cloud API and Firebase identifier",
+      "provider": "Google Cloud",
+      "category": "Cloud",
+      "severity": "HIGH",
+      "confidence": 95,
+      "version": "1.0.0",
+      "author": "SecretShield Team",
+      "license": "Apache-2.0",
+      "documentationUrl": "https://cloud.google.com/docs/authentication/api-keys",
+      "patterns": [
+        "AIza[0-9A-Za-z\\-_]{35}"
+      ],
+      "keywords": [
+        "AIza",
+        "GOOGLE_API_KEY",
+        "firebase"
+      ],
+      "testFixtures": {
+        "positive": [
+          "const gkey = 'AIzaSyA1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q';"
+        ],
+        "negative": [
+          "const gkey = 'AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';"
+        ]
+      }
+    },
+    {
+      "id": "openai-api-key",
+      "name": "OpenAI API Key",
+      "description": "OpenAI secret authentication token starting with sk- or sk-proj-",
+      "provider": "OpenAI",
+      "category": "AI",
+      "severity": "CRITICAL",
+      "confidence": 98,
+      "version": "1.0.0",
+      "author": "SecretShield Team",
+      "license": "Apache-2.0",
+      "documentationUrl": "https://platform.openai.com/docs/api-reference/authentication",
+      "patterns": [
+        "sk-(?:proj-)?[A-Za-z0-9_-]{32,128}"
+      ],
+      "keywords": [
+        "sk-",
+        "OPENAI_API_KEY",
+        "openai"
+      ],
+      "testFixtures": {
+        "positive": [
+          "OPENAI_API_KEY=sk-proj-abc1234567890defghijklmnopqrstuvwx",
+          "const openai = 'sk-live1234567890abcdefghijklmnopqrst';"
+        ],
+        "negative": [
+          "OPENAI_API_KEY=sk-placeholder-mock"
+        ]
+      }
+    },
+    {
+      "id": "anthropic-api-key",
+      "name": "Anthropic API Key",
+      "description": "Anthropic Claude API authentication key starting with sk-ant-",
+      "provider": "Anthropic",
+      "category": "AI",
+      "severity": "CRITICAL",
+      "confidence": 98,
+      "version": "1.0.0",
+      "author": "SecretShield Team",
+      "license": "Apache-2.0",
+      "documentationUrl": "https://docs.anthropic.com/en/api/getting-started",
+      "patterns": [
+        "sk-ant-[A-Za-z0-9_-]{40,120}"
+      ],
+      "keywords": [
+        "sk-ant-",
+        "ANTHROPIC_API_KEY",
+        "claude"
+      ],
+      "testFixtures": {
+        "positive": [
+          "ANTHROPIC_API_KEY=sk-ant-api03-abcdef1234567890abcdef1234567890abcdef12"
+        ],
+        "negative": [
+          "ANTHROPIC_API_KEY=sk-ant-mock-key"
+        ]
+      }
+    },
+    {
+      "id": "github-pat",
+      "name": "GitHub Personal Access Token",
+      "description": "GitHub classic and fine-grained personal access tokens",
+      "provider": "GitHub",
+      "category": "Source Control",
+      "severity": "CRITICAL",
+      "confidence": 98,
+      "version": "1.0.0",
+      "author": "SecretShield Team",
+      "license": "Apache-2.0",
+      "documentationUrl": "https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/about-authentication-to-github",
+      "patterns": [
+        "ghp_[A-Za-z0-9_]{36,255}",
+        "github_pat_[A-Za-z0-9_]{82}"
+      ],
+      "keywords": [
+        "ghp_",
+        "github_pat_",
+        "GITHUB_TOKEN"
+      ],
+      "testFixtures": {
+        "positive": [
+          "GITHUB_TOKEN=ghp_111122223333444455556666777788889999",
+          "PAT=github_pat_11AAAAAAA0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+        ],
+        "negative": [
+          "GITHUB_TOKEN=ghp_dummy"
+        ]
+      }
+    },
+    {
+      "id": "gitlab-pat",
+      "name": "GitLab Personal Access Token",
+      "description": "GitLab personal access token starting with glpat-",
+      "provider": "GitLab",
+      "category": "Source Control",
+      "severity": "CRITICAL",
+      "confidence": 98,
+      "version": "1.0.0",
+      "author": "SecretShield Team",
+      "license": "Apache-2.0",
+      "documentationUrl": "https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html",
+      "patterns": [
+        "glpat-[0-9a-zA-Z_\\-]{20,24}"
+      ],
+      "keywords": [
+        "glpat-",
+        "GITLAB_TOKEN"
+      ],
+      "testFixtures": {
+        "positive": [
+          "GITLAB_TOKEN=glpat-1234567890abcdefghij"
+        ],
+        "negative": [
+          "GITLAB_TOKEN=glpat-short"
+        ]
+      }
+    },
+    {
+      "id": "stripe-secret-key",
+      "name": "Stripe Live Secret Key",
+      "description": "Stripe production secret API key starting with sk_live_ or rk_live_",
+      "provider": "Stripe",
+      "category": "Payments",
+      "severity": "CRITICAL",
+      "confidence": 98,
+      "version": "1.0.0",
+      "author": "SecretShield Team",
+      "license": "Apache-2.0",
+      "documentationUrl": "https://stripe.com/docs/keys",
+      "patterns": [
+        "(?:sk|rk)_(?:live|test)_[0-9a-zA-Z]{24,99}"
+      ],
+      "keywords": [
+        "sk_live_",
+        "rk_live_",
+        "sk_test_",
+        "STRIPE_SECRET"
+      ],
+      "testFixtures": {
+        "positive": [
+          "const stripe = require('stripe')('sk_test_00000000000000000000000000000000');"
+        ],
+        "negative": [
+          "const stripe = require('stripe')('sk_short');"
+        ]
+      }
+    },
+    {
+      "id": "slack-bot-token",
+      "name": "Slack Bot Token",
+      "description": "Slack workspace bot token starting with xoxb- or xapp-",
+      "provider": "Slack",
+      "category": "Communication",
+      "severity": "HIGH",
+      "confidence": 95,
+      "version": "1.0.0",
+      "author": "SecretShield Team",
+      "license": "Apache-2.0",
+      "documentationUrl": "https://api.slack.com/authentication/token-types",
+      "patterns": [
+        "(?:xoxb|xoxp|xapp)-[0-9]{10,13}-[0-9]{10,13}-[a-zA-Z0-9]{24}"
+      ],
+      "keywords": [
+        "xoxb-",
+        "xoxp-",
+        "xapp-",
+        "SLACK_BOT_TOKEN"
+      ],
+      "testFixtures": {
+        "positive": [
+          "SLACK_BOT_TOKEN=xapp-00000000000-00000000000-000000000000000000000000"
+        ],
+        "negative": [
+          "SLACK_BOT_TOKEN=xapp-short"
+        ]
+      }
+    },
+    {
+      "id": "postgres-connection-url",
+      "name": "PostgreSQL Connection String with Credentials",
+      "description": "PostgreSQL URI containing embedded username and password",
+      "provider": "PostgreSQL",
+      "category": "Databases",
+      "severity": "CRITICAL",
+      "confidence": 94,
+      "version": "1.0.0",
+      "author": "SecretShield Team",
+      "license": "Apache-2.0",
+      "documentationUrl": "https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING",
+      "patterns": [
+        "postgres(?:ql)?://[a-zA-Z0-9_\\-\\.]+:[^@\\s'\"]+@[a-zA-Z0-9_\\-\\.]+:[0-9]{2,5}/[a-zA-Z0-9_\\-\\.]+"
+      ],
+      "keywords": [
+        "postgres://",
+        "postgresql://",
+        "DATABASE_URL"
+      ],
+      "testFixtures": {
+        "positive": [
+          "DATABASE_URL=postgres://app_user:SuperSecretP@ss123@db.prod.internal:5432/appdb"
+        ],
+        "negative": [
+          "DATABASE_URL=postgres://localhost:5432/testdb",
+          "DATABASE_URL=postgres://app_user@localhost/appdb"
+        ]
+      }
+    },
+    {
+      "id": "mongodb-connection-url",
+      "name": "MongoDB Connection String with Credentials",
+      "description": "MongoDB URI containing user credentials",
+      "provider": "MongoDB",
+      "category": "Databases",
+      "severity": "CRITICAL",
+      "confidence": 94,
+      "version": "1.0.0",
+      "author": "SecretShield Team",
+      "license": "Apache-2.0",
+      "documentationUrl": "https://www.mongodb.com/docs/manual/reference/connection-string/",
+      "patterns": [
+        "mongodb(?:\\+srv)?://[a-zA-Z0-9_\\-\\.]+:[^@\\s'\"]+@[a-zA-Z0-9_\\-\\.]+"
+      ],
+      "keywords": [
+        "mongodb://",
+        "mongodb+srv://",
+        "MONGO_URI"
+      ],
+      "testFixtures": {
+        "positive": [
+          "MONGO_URI=mongodb+srv://cluster_admin:SecretMongoP@ss@cluster0.abcde.mongodb.net/prod"
+        ],
+        "negative": [
+          "MONGO_URI=mongodb://localhost:27017/dev"
+        ]
+      }
+    },
+    {
+      "id": "rsa-private-key",
+      "name": "RSA / OpenSSH Private Key Block",
+      "description": "Cryptographic private key file header and block",
+      "provider": "Generic",
+      "category": "Private Keys",
+      "severity": "CRITICAL",
+      "confidence": 100,
+      "version": "1.0.0",
+      "author": "SecretShield Team",
+      "license": "Apache-2.0",
+      "documentationUrl": "https://en.wikipedia.org/wiki/Private_key",
+      "patterns": [
+        "-----BEGIN (?:RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY(?: BLOCK)?-----"
+      ],
+      "keywords": [
+        "-----BEGIN",
+        "PRIVATE KEY-----"
+      ],
+      "testFixtures": {
+        "positive": [
+          "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA0...\n-----END RSA PRIVATE KEY-----"
+        ],
+        "negative": [
+          "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0...\n-----END PUBLIC KEY-----"
+        ]
+      }
+    },
+    {
+      "id": "jwt-token",
+      "name": "JSON Web Token (JWT)",
+      "description": "Signed bearer JSON Web Token containing header, payload, and signature",
+      "provider": "Generic",
+      "category": "Authentication",
+      "severity": "MEDIUM",
+      "confidence": 88,
+      "version": "1.0.0",
+      "author": "SecretShield Team",
+      "license": "Apache-2.0",
+      "documentationUrl": "https://jwt.io/introduction",
+      "patterns": [
+        "eyJ[A-Za-z0-9_-]{10,}\\.eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_\\-]{10,}"
+      ],
+      "keywords": [
+        "eyJ",
+        "Bearer",
+        "jwt"
+      ],
+      "testFixtures": {
+        "positive": [
+          "const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';"
+        ],
+        "negative": [
+          "const notJwt = 'eyJshort.eyJshort.notreal';"
+        ]
+      }
+    },
+    {
+      "id": "npm-access-token",
+      "name": "NPM Registry Access Token",
+      "description": "NPM authentication token starting with npm_",
+      "provider": "NPM",
+      "category": "Tokens",
+      "severity": "CRITICAL",
+      "confidence": 98,
+      "version": "1.0.0",
+      "author": "SecretShield Team",
+      "license": "Apache-2.0",
+      "documentationUrl": "https://docs.npmjs.com/about-access-tokens",
+      "patterns": [
+        "npm_[A-Za-z0-9]{36}"
+      ],
+      "keywords": [
+        "npm_",
+        "NPM_TOKEN",
+        "_authToken"
+      ],
+      "testFixtures": {
+        "positive": [
+          "//registry.npmjs.org/:_authToken=npm_111122223333444455556666777788889999"
+        ],
+        "negative": [
+          "//registry.npmjs.org/:_authToken=npm_short"
+        ]
+      }
+    },
+    {
+      "id": "generic-hardcoded-password",
+      "name": "Hardcoded Password Assignment",
+      "description": "Hardcoded password variable assignment in source code",
+      "provider": "Generic",
+      "category": "Generic Secrets",
+      "severity": "HIGH",
+      "confidence": 85,
+      "version": "1.0.0",
+      "author": "SecretShield Team",
+      "license": "Apache-2.0",
+      "documentationUrl": "https://cwe.mitre.org/data/definitions/798.html",
+      "patterns": [
+        "(?i)(?:password|passwd|pwd|secret_key|api_secret)\\s*[:=]\\s*['\"][A-Za-z0-9!@#$%^&*()_+\\-=\\[\\]{};':\",.<>/?]{8,64}['\"]"
+      ],
+      "keywords": [
+        "password",
+        "passwd",
+        "pwd"
+      ],
+      "exclusions": [
+        "changeme",
+        "password123",
+        "placeholder",
+        "your_password_here"
+      ],
+      "testFixtures": {
+        "positive": [
+          "const password = 'SuperSecretProductionP@ssword2026!';"
+        ],
+        "negative": [
+          "const password = 'changeme';",
+          "const password = 'password123';"
+        ]
+      }
+    },
+    {
+      "id": "vault-token",
+      "name": "HashiCorp Vault Token",
+      "description": "HashiCorp Vault authentication token starting with s. or hvs.",
+      "provider": "HashiCorp Vault",
+      "category": "Infrastructure",
+      "severity": "CRITICAL",
+      "confidence": 95,
+      "version": "1.0.0",
+      "author": "SecretShield Team",
+      "license": "Apache-2.0",
+      "documentationUrl": "https://developer.hashicorp.com/vault/docs/concepts/tokens",
+      "patterns": [
+        "(?:s\\.|hvs\\.)[a-zA-Z0-9]{24,32}"
+      ],
+      "keywords": [
+        "VAULT_TOKEN",
+        "hvs.",
+        "s."
+      ],
+      "testFixtures": {
+        "positive": [
+          "VAULT_TOKEN=hvs.111122223333444455556666"
+        ],
+        "negative": [
+          "VAULT_TOKEN=hvs.short"
+        ]
+      }
+    },
+    {
+      "id": "dotenv-credential-variable",
+      "name": "Dotenv Exposed Credential Variable",
+      "description": "Environment variable containing sensitive tokens or secrets",
+      "provider": "Generic",
+      "category": "Configuration Secrets",
+      "severity": "HIGH",
+      "confidence": 85,
+      "version": "1.0.0",
+      "author": "SecretShield Team",
+      "license": "Apache-2.0",
+      "documentationUrl": "https://12factor.net/config",
+      "patterns": [
+        "(?i)(?:PROD_SECRET|APP_KEY|AUTH_SECRET|MASTER_KEY)\\s*=\\s*['\"]?[A-Za-z0-9_\\-+=]{16,64}['\"]?"
+      ],
+      "keywords": [
+        "PROD_SECRET",
+        "APP_KEY",
+        "AUTH_SECRET",
+        "MASTER_KEY"
+      ],
+      "testFixtures": {
+        "positive": [
+          "APP_KEY=base64:9876543210abcdefghijklmnopqrstuvwxyz"
+        ],
+        "negative": [
+          "APP_KEY=placeholder"
+        ]
+      }
+    },
+    {
+      "id": "github-actions-secret",
+      "name": "GitHub Actions Hardcoded Secret",
+      "description": "Hardcoded secret inside GitHub Actions workflow YAML",
+      "provider": "GitHub",
+      "category": "CI/CD",
+      "severity": "CRITICAL",
+      "confidence": 90,
+      "version": "1.0.0",
+      "author": "SecretShield Team",
+      "license": "Apache-2.0",
+      "documentationUrl": "https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions",
+      "patterns": [
+        "(?i)(?:GH_TOKEN|GITHUB_TOKEN|DEPLOY_KEY)\\s*:\\s*['\"][A-Za-z0-9_]{32,64}['\"]"
+      ],
+      "keywords": [
+        "GH_TOKEN",
+        "GITHUB_TOKEN",
+        "DEPLOY_KEY"
+      ],
+      "testFixtures": {
+        "positive": [
+          "env:\n  GH_TOKEN: 'ghp_111122223333444455556666777788889999'"
+        ],
+        "negative": [
+          "env:\n  GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'"
+        ]
+      }
+    }
+  ],
+  "integrity": "sha256-22d642a05cb983e1ea2c19a6e93643af27c4e838319ca7275396c445d7a2f2b7"
+}

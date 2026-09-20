@@ -1,287 +1,403 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { SeverityBadge } from '@/components/results/SeverityBadge';
-import { useCustomRules } from '@/lib/hooks/useCustomRules';
-import { scanString } from '@/lib/scanner/engine';
 import { validateRegexSafety } from '@/lib/scanner/regex-safety';
 import {
   FlaskConical, ArrowLeft, Play, Sparkles, CheckCircle2,
-  AlertTriangle, Code2, ShieldAlert, Copy, Check, FileText
+  AlertTriangle, Code2, ShieldAlert, Check, FileText,
+  Layers, Cpu, Activity, RefreshCw, Eye
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
-const SAMPLE_TEMPLATES = [
+const SAMPLE_FIXTURES = [
   {
-    name: 'AWS Access Key',
-    language: 'javascript',
-    code: `// AWS S3 client initialization\nconst AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE";\nconst AWS_SECRET_ACCESS_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY";\n\nconsole.log("Configured AWS client");`,
+    id: 'aws-access-key-id',
+    name: 'AWS Access Key ID',
+    category: 'Cloud',
+    severity: 'HIGH',
+    confidence: 95,
+    pattern: '(?:A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}',
+    positiveFixtures: [
+      'AWS_ACCESS_KEY_ID=AKIAEXAMPLEKEY123456',
+      'const key = "AKIA1234567890ABCDEF";'
+    ],
+    negativeFixtures: [
+      'AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE',
+      'const dummy = "NOT_AN_AWS_KEY";'
+    ],
+    sampleCode: `// AWS S3 client configuration\nconst AWS_ACCESS_KEY_ID = "AKIAEXAMPLEKEY123456";\nconst S3_BUCKET = "prod-backups";`,
   },
   {
-    name: 'Python Database URI',
-    language: 'python',
-    code: `# Database configuration\nDATABASE_URL = "postgres://admin:SuperSecretPass123@db.prod.acme.internal:5432/appdb"\n\ndef get_connection():\n    return create_engine(DATABASE_URL)`,
+    id: 'openai-api-key',
+    name: 'OpenAI API Key',
+    category: 'AI',
+    severity: 'CRITICAL',
+    confidence: 98,
+    pattern: 'sk-(?:proj-)?[A-Za-z0-9_-]{32,128}',
+    positiveFixtures: [
+      'OPENAI_API_KEY=sk-proj-abc1234567890defghijklmnopqrstuvwx'
+    ],
+    negativeFixtures: [
+      'OPENAI_API_KEY=sk-placeholder-mock'
+    ],
+    sampleCode: `import OpenAI from 'openai';\nconst openai = new OpenAI({\n  apiKey: 'sk-proj-abc1234567890defghijklmnopqrstuvwx',\n});`,
   },
   {
-    name: '.env Environment File',
-    language: 'dotenv',
-    code: `NODE_ENV=production\nPORT=8080\nAPI_TOKEN=prod_token_abc1234567890example\nDATABASE_URL=postgres://app:SecretPass456@db.internal:5432/app\nJWT_SECRET=super_secret_signing_key_4839281`,
+    id: 'postgres-connection-url',
+    name: 'PostgreSQL Connection URL',
+    category: 'Databases',
+    severity: 'CRITICAL',
+    confidence: 94,
+    pattern: 'postgres(?:ql)?://[a-zA-Z0-9_\\-\\.]+:[^@\\s\'"]+@[a-zA-Z0-9_\\-\\.]+:[0-9]{2,5}/[a-zA-Z0-9_\\-\\.]+',
+    positiveFixtures: [
+      'DATABASE_URL=postgres://app_user:SuperSecretPass123@db.prod.internal:5432/appdb'
+    ],
+    negativeFixtures: [
+      'DATABASE_URL=postgres://localhost:5432/testdb'
+    ],
+    sampleCode: `const { Pool } = require('pg');\nconst pool = new Pool({\n  connectionString: 'postgres://app_user:SuperSecretPass123@db.prod.internal:5432/appdb'\n});`,
   },
   {
-    name: 'Docker Compose Config',
-    language: 'yaml',
-    code: `version: '3.8'\nservices:\n  api:\n    image: acme/api:latest\n    environment:\n      - APP_SECRET=production_secret_key_1234567890\n      - DB_PASSWORD=VerySecurePassword987654321`,
+    id: 'custom-rule',
+    name: 'Custom Internal Regex',
+    category: 'Custom',
+    severity: 'HIGH',
+    confidence: 85,
+    pattern: 'corp_token_[a-zA-Z0-9]{24,48}',
+    positiveFixtures: [
+      'CORP_TOKEN=corp_token_111122223333444455556666'
+    ],
+    negativeFixtures: [
+      'CORP_TOKEN=corp_token_short'
+    ],
+    sampleCode: `// Internal API gateway token\nconst API_KEY = "corp_token_111122223333444455556666";`,
   },
 ];
 
 export default function RuleLabPage() {
-  const { rules: customRules } = useCustomRules();
-  const [selectedTemplate, setSelectedTemplate] = useState(SAMPLE_TEMPLATES[0].name);
+  const [selectedRuleId, setSelectedRuleId] = useState(SAMPLE_FIXTURES[0].id);
+  const [customPattern, setCustomPattern] = useState(SAMPLE_FIXTURES[0].pattern);
+  const [code, setCode] = useState(SAMPLE_FIXTURES[0].sampleCode);
   const [filename, setFilename] = useState('src/config.js');
-  const [code, setCode] = useState(SAMPLE_TEMPLATES[0].code);
-  const [customPattern, setCustomPattern] = useState('');
-  const [scanResult, setScanResult] = useState(null);
-  const [isScanning, setIsScanning] = useState(false);
-  const [regexValidation, setRegexValidation] = useState(null);
+  const [testResult, setTestResult] = useState(null);
+  const [isTesting, setIsTesting] = useState(false);
+  const [regexSafety, setRegexSafety] = useState({ valid: true });
 
-  const handleTemplateChange = (name) => {
-    const t = SAMPLE_TEMPLATES.find(x => x.name === name);
-    if (t) {
-      setSelectedTemplate(t.name);
-      setCode(t.code);
-      setFilename(t.language === 'dotenv' ? '.env' : t.language === 'python' ? 'src/db.py' : t.language === 'yaml' ? 'docker-compose.yml' : 'src/config.js');
+  const activeRule = SAMPLE_FIXTURES.find(r => r.id === selectedRuleId) || SAMPLE_FIXTURES[0];
+
+  useEffect(() => {
+    if (customPattern.trim()) {
+      const val = validateRegexSafety(customPattern.trim());
+      setRegexSafety(val);
+    }
+  }, [customPattern]);
+
+  const handleSelectRule = (ruleId) => {
+    setSelectedRuleId(ruleId);
+    const r = SAMPLE_FIXTURES.find(x => x.id === ruleId);
+    if (r) {
+      setCustomPattern(r.pattern);
+      setCode(r.sampleCode);
+      setTestResult(null);
     }
   };
 
-  const handlePatternChange = (pat) => {
-    setCustomPattern(pat);
-    if (pat.trim()) {
-      const val = validateRegexSafety(pat);
-      setRegexValidation(val);
-    } else {
-      setRegexValidation(null);
-    }
-  };
-
-  const handleRunLab = () => {
-    setIsScanning(true);
+  const handleRunTest = async (runFixtures = false) => {
+    setIsTesting(true);
     try {
-      const customRulesList = [];
-      if (customPattern.trim() && regexValidation?.valid) {
-        customRulesList.push({
-          id: 'lab_test_rule',
-          name: 'Interactive Lab Rule',
-          pattern: customPattern.trim(),
-          severity: 'HIGH',
-          enabled: true,
-        });
-      }
+      const payload = {
+        rule: {
+          id: selectedRuleId,
+          name: activeRule.name,
+          pattern: customPattern,
+          severity: activeRule.severity,
+          confidence: activeRule.confidence,
+          testFixtures: {
+            positive: activeRule.positiveFixtures,
+            negative: activeRule.negativeFixtures,
+          },
+        },
+        content: code,
+        filename,
+        runFixtures,
+      };
 
-      const res = scanString(code, filename, { customRules: customRulesList });
-      setScanResult(res);
+      const res = await fetch('/api/rules/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTestResult(data.data);
+      } else {
+        setTestResult({ error: data.error?.message || 'Testing failed' });
+      }
     } catch (err) {
-      console.error(err);
+      setTestResult({ error: err.message });
     } finally {
-      setIsScanning(false);
+      setIsTesting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-grid">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* Header & Navigation */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Link href="/rules" className="p-2 rounded-lg border border-border/40 hover:bg-secondary text-muted-foreground transition-colors">
+    <div className="min-h-screen bg-background py-10 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="space-y-4">
+          <Link href="/rules">
+            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground mb-2">
               <ArrowLeft className="w-4 h-4" />
-            </Link>
+              Back to Rules
+            </Button>
+          </Link>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-6">
             <div>
               <div className="flex items-center gap-2">
-                <FlaskConical className="w-5 h-5 text-primary" />
-                <h1 className="text-xl font-bold">Rule Testing Lab</h1>
-                <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
-                  Interactive Sandbox
+                <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">
+                  LAB TESTING BENCH
                 </Badge>
+                <span className="text-xs text-muted-foreground font-mono">Zero-Persistence Sandbox</span>
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Test detection rules against synthetic source code snippets in a deterministic local environment.
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground mt-1">
+                Rule Testing & Quality Lab
+              </h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Safely test regex patterns, inspect Shannon entropy scores, and benchmark fixture precision.
               </p>
             </div>
-          </div>
-          <Button onClick={handleRunLab} disabled={isScanning} className="gap-2">
-            <Play className="w-3.5 h-3.5 fill-current" />
-            {isScanning ? 'Running...' : 'Run Detection'}
-          </Button>
-        </div>
 
-        {/* Template Selector & Filename */}
-        <div className="rounded-xl border border-border/50 bg-card/40 p-4 mb-6 grid sm:grid-cols-2 gap-4">
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Synthetic Sample Templates</label>
-            <div className="flex flex-wrap gap-2">
-              {SAMPLE_TEMPLATES.map(tmpl => (
-                <button
-                  key={tmpl.name}
-                  onClick={() => handleTemplateChange(tmpl.name)}
-                  className={cn(
-                    'text-xs px-3 py-1.5 rounded-lg border transition-colors',
-                    selectedTemplate === tmpl.name
-                      ? 'bg-primary/10 border-primary text-primary font-medium'
-                      : 'border-border/40 hover:bg-secondary text-muted-foreground'
-                  )}
-                >
-                  {tmpl.name}
-                </button>
-              ))}
+            <div className="flex items-center gap-2">
+              <Link href="/rules/marketplace">
+                <Button variant="outline" size="sm" className="text-xs">
+                  Rule Marketplace
+                </Button>
+              </Link>
+              <Link href="/rules/community">
+                <Button size="sm" className="text-xs bg-primary text-primary-foreground">
+                  Submit Community Rule
+                </Button>
+              </Link>
             </div>
           </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Simulated File Path</label>
-            <Input
-              value={filename}
-              onChange={e => setFilename(e.target.value)}
-              className="bg-secondary/50 h-9 text-xs font-mono"
-              placeholder="e.g. src/auth/service.js"
-            />
+        </div>
+
+        {/* Security Warning */}
+        <div className="rounded-xl border border-border/60 bg-card/40 p-4 text-xs text-muted-foreground flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
+            <span>
+              <strong>Zero-Exposure Guarantee:</strong> Test inputs are evaluated in-memory and discarded. Raw secret values are never persisted or returned in API responses.
+            </span>
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Left Column: Code Editor & Custom Regex Input */}
-          <div className="space-y-4">
-            <div className="rounded-xl border border-border/50 bg-card/60 p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-                  <Code2 className="w-3.5 h-3.5 text-primary" />
-                  Test Snippet (Synthetic Content)
-                </label>
-                <span className="text-[10px] text-muted-foreground font-mono">Local execution only</span>
+        {/* Main Grid: Left Config, Right Test Area */}
+        <div className="grid lg:grid-cols-12 gap-8">
+          {/* Left Column: Rule Selector & Pattern Editor */}
+          <div className="lg:col-span-5 space-y-6">
+            {/* Rule Selector */}
+            <div className="rounded-2xl border border-border/70 bg-card/60 p-5 space-y-4">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
+                1. Select Detection Rule
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {SAMPLE_FIXTURES.map(r => (
+                  <button
+                    key={r.id}
+                    onClick={() => handleSelectRule(r.id)}
+                    className={`p-3 rounded-xl border text-left transition-all ${
+                      selectedRuleId === r.id
+                        ? 'border-primary bg-primary/10 text-foreground font-semibold shadow-sm'
+                        : 'border-border/60 bg-secondary/20 text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <div className="text-xs font-semibold truncate">{r.name}</div>
+                    <div className="text-[10px] text-muted-foreground font-mono mt-0.5">{r.category}</div>
+                  </button>
+                ))}
               </div>
+            </div>
+
+            {/* Pattern & Safety Box */}
+            <div className="rounded-2xl border border-border/70 bg-card/60 p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  2. Regular Expression Pattern
+                </label>
+                <Badge
+                  variant="outline"
+                  className={`text-[10px] font-mono ${
+                    regexSafety.valid
+                      ? 'border-emerald-500/40 text-emerald-400 bg-emerald-500/10'
+                      : 'border-red-500/40 text-red-400 bg-red-500/10'
+                  }`}
+                >
+                  {regexSafety.valid ? 'ReDoS Safe' : 'ReDoS Warning'}
+                </Badge>
+              </div>
+
               <textarea
+                rows={3}
+                value={customPattern}
+                onChange={e => setCustomPattern(e.target.value)}
+                className="w-full p-3 font-mono text-xs rounded-xl border border-border/70 bg-background text-foreground focus:outline-none focus:border-primary resize-none"
+              />
+
+              {!regexSafety.valid && (
+                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                  <span>{regexSafety.error || 'Potential catastrophic backtracking construct detected.'}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col gap-2.5">
+              <Button
+                onClick={() => handleRunTest(false)}
+                disabled={isTesting || !regexSafety.valid}
+                className="w-full gap-2 font-bold bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                <Play className="w-4 h-4" />
+                {isTesting ? 'Evaluating Match...' : 'Test Pattern on Synthetic Content'}
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => handleRunTest(true)}
+                disabled={isTesting || !regexSafety.valid}
+                className="w-full gap-2 text-xs"
+              >
+                <Activity className="w-4 h-4 text-emerald-400" />
+                Run Benchmark & Fixtures Quality
+              </Button>
+            </div>
+          </div>
+
+          {/* Right Column: Code Editor & Live Findings */}
+          <div className="lg:col-span-7 space-y-6">
+            <div className="rounded-2xl border border-border/70 bg-card/60 p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-primary" />
+                  <span className="text-xs font-bold text-foreground">Synthetic Code Input</span>
+                </div>
+                <input
+                  type="text"
+                  value={filename}
+                  onChange={e => setFilename(e.target.value)}
+                  className="px-2 py-1 text-[11px] font-mono rounded bg-background border border-border/60 text-muted-foreground w-40"
+                  placeholder="src/config.js"
+                />
+              </div>
+
+              <textarea
+                rows={9}
                 value={code}
                 onChange={e => setCode(e.target.value)}
-                rows={12}
-                className="w-full rounded-lg border border-border/60 bg-secondary/60 p-3 font-mono text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-y"
-                placeholder="Paste code or configuration file here..."
+                placeholder="Paste synthetic sample code containing test credentials here..."
+                className="w-full p-3 font-mono text-xs rounded-xl border border-border/70 bg-[oklch(0.08_0.005_240)] text-foreground focus:outline-none focus:border-primary resize-none"
               />
             </div>
 
-            {/* Custom Rule Input with ReDoS validation */}
-            <div className="rounded-xl border border-border/50 bg-card/60 p-4 space-y-3">
-              <label className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-primary" />
-                Optional: Custom Regex Pattern
-              </label>
-              <Input
-                value={customPattern}
-                onChange={e => handlePatternChange(e.target.value)}
-                placeholder="e.g. ACME_TOKEN_[A-Za-z0-9]{32}"
-                className={cn('bg-secondary/50 font-mono text-xs h-9', regexValidation && !regexValidation.valid && 'border-red-500/50')}
-              />
-              {regexValidation && (
-                <div className={cn(
-                  'text-[11px] p-2 rounded-md border flex items-start gap-2',
-                  regexValidation.valid
-                    ? 'bg-primary/10 border-primary/20 text-primary'
-                    : 'bg-red-950/40 border-red-800/40 text-red-300'
-                )}>
-                  {regexValidation.valid ? <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> : <AlertTriangle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />}
-                  <span>{regexValidation.valid ? 'ReDoS Safety Check Passed: Safe regex pattern structure.' : regexValidation.error}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right Column: Lab Results & Inspection */}
-          <div className="space-y-4">
-            <div className="rounded-xl border border-border/50 bg-card/60 p-5 min-h-[420px] space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-border/40">
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <ShieldAlert className="w-4 h-4 text-primary" />
-                  Detection Findings
-                </h3>
-                {scanResult && (
-                  <Badge variant="outline" className="text-xs font-mono">
-                    {scanResult.findings.length} findings · {scanResult.duration}ms
-                  </Badge>
-                )}
-              </div>
-
-              {!scanResult ? (
-                <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground p-6">
-                  <FlaskConical className="w-10 h-10 mb-3 text-muted-foreground/40" />
-                  <p className="text-sm font-medium">No detection run yet</p>
-                  <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-                    Click <strong>Run Detection</strong> to analyze your sample snippet against built-in and custom intelligence rules.
-                  </p>
-                </div>
-              ) : scanResult.findings.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground p-6">
-                  <CheckCircle2 className="w-10 h-10 mb-3 text-primary" />
-                  <p className="text-sm font-medium text-foreground">Clean Snippet: No Secrets Detected</p>
-                  <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-                    The scanner engine found no matching patterns or high-entropy credentials above threshold.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {scanResult.findings.map((f, idx) => (
-                    <div key={idx} className="rounded-lg border border-border/60 bg-secondary/40 p-4 space-y-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <span className="font-semibold text-sm text-foreground">{f.name}</span>
-                            <SeverityBadge severity={f.severity} size="sm" showIcon={false} />
-                            <Badge variant="outline" className="text-[10px] font-mono border-border/50">
-                              {f.confidence}% Confidence
-                            </Badge>
-                          </div>
-                          <p className="text-xs text-muted-foreground">{f.description}</p>
-                        </div>
-                        <span className="text-xs font-mono text-muted-foreground flex-shrink-0">
-                          Line {f.line}
-                        </span>
-                      </div>
-
-                      {/* Masked string value */}
-                      <div className="rounded border border-border/40 bg-card/60 px-2.5 py-1.5 font-mono text-xs text-primary flex items-center justify-between">
-                        <span>Masked: {f.maskedValue}</span>
-                        <span className="text-[10px] text-muted-foreground uppercase">{f.ruleId}</span>
-                      </div>
-
-                      {/* Why Detected Signals */}
-                      {f.whyDetected && (
-                        <div className="space-y-1">
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Rationale:</span>
-                          <div className="grid gap-1 pl-1">
-                            {f.whyDetected.map((why, wIdx) => (
-                              <div key={wIdx} className="text-xs flex items-center gap-1.5 text-foreground/80">
-                                <CheckCircle2 className="w-3 h-3 text-primary flex-shrink-0" />
-                                <span>{why}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Developer Quick Fix Preview */}
-                      {f.quickFix && (
-                        <div className="rounded border border-primary/20 bg-primary/5 p-2.5 space-y-1 text-xs">
-                          <span className="font-semibold text-primary text-[11px]">Developer Quick Fix:</span>
-                          <pre className="font-mono text-[11px] text-foreground/90 whitespace-pre overflow-x-auto">
-                            {f.quickFix.afterSnippet}
-                          </pre>
-                        </div>
+            {/* Results Output */}
+            {testResult && (
+              <div className="rounded-2xl border border-border/70 bg-card/60 p-5 space-y-4 animate-in fade-in">
+                {testResult.error ? (
+                  <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span>{testResult.error}</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-primary" />
+                        Match Results ({testResult.matchesCount} detected)
+                      </h3>
+                      {testResult.qualityReport && (
+                        <Badge
+                          variant="outline"
+                          className={`text-xs font-mono ${
+                            testResult.qualityReport.status === 'PASSING'
+                              ? 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10'
+                              : 'text-yellow-400 border-yellow-500/40'
+                          }`}
+                        >
+                          Quality: {testResult.qualityReport.status}
+                        </Badge>
                       )}
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+
+                    {/* Fixture Benchmark Card */}
+                    {testResult.qualityReport && (
+                      <div className="grid grid-cols-3 gap-3 p-3.5 rounded-xl bg-secondary/30 border border-border/50 text-center font-mono">
+                        <div>
+                          <span className="text-[10px] text-muted-foreground block">Precision</span>
+                          <span className="text-sm font-bold text-foreground">
+                            {testResult.qualityReport.metrics.precision}%
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-muted-foreground block">Recall</span>
+                          <span className="text-sm font-bold text-foreground">
+                            {testResult.qualityReport.metrics.recall}%
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-muted-foreground block">Avg Latency</span>
+                          <span className="text-sm font-bold text-primary">
+                            {testResult.qualityReport.metrics.avgExecutionTimeMs} ms
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {testResult.matches.length === 0 ? (
+                      <div className="p-6 text-center text-xs text-muted-foreground border border-dashed border-border/60 rounded-xl">
+                        No matches found in the synthetic content for this pattern.
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {testResult.matches.map((m, idx) => (
+                          <div key={idx} className="p-4 rounded-xl border border-border/60 bg-secondary/20 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <SeverityBadge severity={m.severity} />
+                                <span className="font-semibold text-xs text-foreground">{m.name}</span>
+                              </div>
+                              <span className="text-[11px] font-mono text-muted-foreground">
+                                Line {m.line}:{m.column}
+                              </span>
+                            </div>
+
+                            <div className="p-2 rounded bg-background/80 border border-border/40 font-mono text-xs text-amber-300">
+                              <span>Matched: </span>
+                              <code>{m.maskedValue}</code>
+                            </div>
+
+                            <div className="text-[11px] text-muted-foreground space-y-1 pt-1">
+                              {m.whyDetected?.map((why, wIdx) => (
+                                <div key={wIdx} className="flex items-center gap-1.5">
+                                  <span className="text-primary">•</span>
+                                  <span>{why}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

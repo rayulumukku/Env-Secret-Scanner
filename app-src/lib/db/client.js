@@ -56,6 +56,11 @@ class MemoryStore {
     this.auditLogs = [];
     this.policies = new Map();
     this.policyViolations = [];
+    this.rulePacks = new Map();
+    this.rulePackVersions = new Map();
+    this.ruleSubmissions = new Map();
+    this.ruleReviews = [];
+    this.ruleTestFixtures = new Map();
   }
 }
 

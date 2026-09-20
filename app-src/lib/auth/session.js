@@ -95,3 +95,20 @@ export function buildSessionCookie(token, { isProduction = process.env.NODE_ENV 
 export function buildClearSessionCookie() {
   return `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT`;
 }
+
+export async function getCurrentUser(request) {
+  try {
+    let token = null;
+    if (request?.cookies?.get) {
+      token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+    } else if (typeof document !== 'undefined') {
+      const match = document.cookie.match(new RegExp('(^| )' + SESSION_COOKIE_NAME + '=([^;]+)'));
+      if (match) token = match[2];
+    }
+    if (!token) return null;
+    const result = await validateSession(token);
+    return result?.user || null;
+  } catch {
+    return null;
+  }
+}

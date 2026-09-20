@@ -33,3 +33,6 @@ Please provide:
 2. **Deterministic In-Memory Masking**: Raw secret values are immediately masked into fingerprints in volatile memory and are never persisted.
 3. **Archive Extraction Hardening**: Strict guards prevent Zip Slip path traversal, Zip bombs, nested archive attacks, and symlink exploits.
 4. **ReDoS Safety**: Custom regular expressions are evaluated against catastrophic backtracking algorithms before registration.
+5. **Rule Pack Sandbox Security**: Rule packs are strictly declarative JSON manifests. Arbitrary code execution (`eval`, `vm`, dynamic script execution) is completely prohibited.
+6. **Zero Real Secrets in Fixtures**: All rule test fixtures and examples must strictly use obvious dummy placeholders.
+7. **Canonical Integrity Verification**: All published rule packs enforce SHA-256 canonical manifest hashes to prevent rule-pack tampering and poisoning.

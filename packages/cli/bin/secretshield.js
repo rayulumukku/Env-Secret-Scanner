@@ -80,14 +80,15 @@ program
   });
 
 // ── RULES COMMAND ─────────────────────────────────────────────────────────────
-const rules = program
-  .command('rules [filter]')
-  .description('List and inspect available detection rules (filter: all, enabled, disabled)')
-  .option('--json', 'Output rules list as JSON')
+program
+  .command('rules [action] [target]')
+  .description('Manage and inspect Rule Packs (list, search, validate, test, install, update, remove, info)')
+  .option('--json', 'Output results as JSON')
   .option('--config <file>', 'Path to configuration file')
-  .action(async (filter, opts) => {
+  .option('--lock <version>', 'Lock rule pack to a specific version')
+  .action(async (action, target, opts) => {
     const { rulesCommand } = await import('../lib/commands/rules.js');
-    const exitCode = await rulesCommand(filter || 'all', opts);
+    const exitCode = await rulesCommand(action || 'list', target || '', opts);
     process.exit(exitCode);
   });
 

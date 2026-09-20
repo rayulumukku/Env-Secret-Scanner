@@ -32,6 +32,7 @@ import { RULES as genericPasswordRules } from './rules/generic-password.js';
 
 import { runRules }                    from './detector.js';
 import { createFingerprint, deduplicateFindings } from './fingerprint.js';
+import { deduplicateFindingsByPrecedence } from './rule-packs/precedence.js';
 import { shouldScanFile }              from './file-filter.js';
 import { maskSecret, maskSecretInLine } from './masking.js';
 
@@ -193,15 +194,19 @@ function scanFile(content, filename, customRules = [], allowlistFingerprints = [
   const customFindings = applyCustomRules(content, filename, customRules);
   allFindings = [...allFindings, ...customFindings];
 
-  // Assign IDs and fingerprints
+  // Assign IDs, fingerprints, and rule-pack version metadata
   allFindings = allFindings.map(finding => ({
     ...finding,
     id: finding.id || generateFindingId(),
     fingerprint: createFingerprint(finding),
+    ruleVersion: finding.ruleVersion || '1.0.0',
+    rulePackId: finding.rulePackId || (finding.isCustomRule ? 'custom-rules' : 'core-rules'),
+    rulePackVersion: finding.rulePackVersion || '1.0.0',
+    scannerVersion: '2.0.0',
   }));
 
-  // Deduplicate
-  const deduplicated = deduplicateFindings(allFindings);
+  // Apply precedence-aware deduplication (core vs org vs custom)
+  const deduplicated = deduplicateFindingsByPrecedence(allFindings);
 
   // Separate active vs allowlisted
   const active = deduplicated.filter(f => !allowlistFingerprints.includes(f.fingerprint));

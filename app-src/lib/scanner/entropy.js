@@ -121,3 +121,5 @@ export function isHighEntropySecret(value, options = {}) {
     charset,
   };
 }
+
+export { shannonEntropy as calculateShannonEntropy };

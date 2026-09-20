@@ -1,0 +1,40 @@
+{
+  "id": "enterprise-compliance-rules",
+  "name": "Enterprise Compliance & Internal Tokens Pack",
+  "version": "1.0.0",
+  "description": "Enterprise compliance rules for detecting internal corporate infrastructure, Vault master tokens, and regulatory PII/PCI token formats.",
+  "author": "SecretShield Enterprise Security",
+  "license": "Commercial / Enterprise",
+  "minimumScannerVersion": "1.0.0",
+  "rules": [
+    {
+      "id": "internal-corp-token",
+      "name": "Corporate SSO / Service Mesh Token",
+      "description": "Internal enterprise service mesh and identity provider bearer token",
+      "provider": "Enterprise SSO",
+      "category": "Authentication",
+      "severity": "CRITICAL",
+      "confidence": 95,
+      "version": "1.0.0",
+      "author": "Enterprise Security Team",
+      "license": "Enterprise",
+      "documentationUrl": "https://internal.corp/security/tokens",
+      "patterns": [
+        "sec_corp_[A-Za-z0-9]{32,64}"
+      ],
+      "keywords": [
+        "sec_corp_",
+        "CORP_AUTH_TOKEN"
+      ],
+      "testFixtures": {
+        "positive": [
+          "CORP_AUTH_TOKEN=sec_corp_11112222333344445555666677778888"
+        ],
+        "negative": [
+          "CORP_AUTH_TOKEN=sec_corp_placeholder"
+        ]
+      }
+    }
+  ],
+  "integrity": "sha256-24446cec1fb9d486973ebf77b4efb48f27930d75c2ec34e4a54af8fed932f385"
+}
