@@ -20,6 +20,7 @@
  */
 
 import { resolve } from 'path';
+import { existsSync } from 'fs';
 import { collectFiles, readFiles, getScanner } from '../scanner-bridge.js';
 import { loadConfig, meetsThreshold } from '../config.js';
 import { loadBaseline, filterAgainstBaseline } from '../baseline.js';
@@ -59,9 +60,10 @@ export async function runScan(scanPath, opts = {}) {
 
   // ── LOAD BASELINE ──────────────────────────────────────────────────────────
   let baselineFingerprints = new Set();
-  if (baseline) {
+  const baselineFile = baseline || (existsSync(resolve(cwd, '.secretshield-baseline.json')) ? resolve(cwd, '.secretshield-baseline.json') : null);
+  if (baselineFile) {
     try {
-      const bl = loadBaseline(baseline);
+      const bl = loadBaseline(baselineFile);
       baselineFingerprints = bl.fingerprints;
     } catch (err) {
       if (!quiet_mode) console.error(`Baseline error: ${err.message}`);

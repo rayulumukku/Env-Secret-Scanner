@@ -66,17 +66,13 @@ const ALL_BUILTIN_RULES = [...PROVIDER_RULES, ...GENERIC_RULES];
 
 let _idCounter = 0;
 function generateFindingId() {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  let id = 'f_';
-  for (let i = 0; i < 6; i++) id += chars[Math.floor(Math.random() * chars.length)];
-  return `${id}_${++_idCounter}`;
+  const rand = Math.random().toString(36).slice(2, 8);
+  return `f_${rand}_${++_idCounter}`;
 }
 
 function generateScanId() {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  let id = 'scan_';
-  for (let i = 0; i < 8; i++) id += chars[Math.floor(Math.random() * chars.length)];
-  return id;
+  const rand = Math.random().toString(36).slice(2, 10);
+  return `scan_${rand}`;
 }
 
 // ── FILENAME SANITIZER ──────────────────────────────────────────────────────

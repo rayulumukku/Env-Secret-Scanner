@@ -12,7 +12,8 @@
  */
 
 import { resolve } from 'path';
-import { collectFiles, readFiles, getScanner } from '../scanner-bridge.js';
+import { existsSync } from 'fs';
+import { collectFiles, readFiles, getScanner, isIgnored } from '../scanner-bridge.js';
 import { loadConfig, meetsThreshold } from '../config.js';
 import { loadBaseline, filterAgainstBaseline } from '../baseline.js';
 import { getPrContext, getChangedFilePaths, getGitRoot, isGitAvailable } from '../git.js';
@@ -45,9 +46,10 @@ export async function runCi(opts = {}) {
 
   // ── BASELINE ────────────────────────────────────────────────────────────────
   let baselineFingerprints = new Set();
-  if (baseline) {
+  const baselineFile = baseline || (existsSync(resolve(cwd, '.secretshield-baseline.json')) ? resolve(cwd, '.secretshield-baseline.json') : null);
+  if (baselineFile) {
     try {
-      const bl = loadBaseline(baseline);
+      const bl = loadBaseline(baselineFile);
       baselineFingerprints = bl.fingerprints;
     } catch (err) {
       console.error(`Baseline error: ${err.message}`);
@@ -82,7 +84,7 @@ export async function runCi(opts = {}) {
     files = readFiles(changedPaths, {
       maxFileSize: cfg.scan.maxFileSize,
       root:        gitRoot,
-    }).filter(f => !isIgnoredPath(f.name, cfg.ignore));
+    }).filter(f => !isIgnored(f.name, cfg.ignore));
 
   } else {
     // Full scan
@@ -154,20 +156,4 @@ export async function runCi(opts = {}) {
   }
 
   return aboveThreshold.length > 0 ? 1 : 0;
-}
-
-function isIgnoredPath(relPath, ignorePatterns = []) {
-  for (const pattern of ignorePatterns) {
-    const p = pattern.replace(/\\/g, '/').replace(/\/$/, '');
-    const s = relPath.replace(/\\/g, '/');
-    const regexStr = p
-      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
-      .replace(/\\\*\\\*/g, '(.+)')
-      .replace(/\\\*/g, '([^/]+)')
-      .replace(/\\\?/g, '([^/])');
-    try {
-      if (new RegExp(`^${regexStr}(/.*)?$`).test(s)) return true;
-    } catch { /* skip */ }
-  }
-  return false;
 }

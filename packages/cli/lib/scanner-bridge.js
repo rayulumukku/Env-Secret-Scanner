@@ -175,52 +175,61 @@ function getExt(filename) {
   return dot >= 0 ? filename.slice(dot).toLowerCase() : '';
 }
 
-function isIgnored(relativePath, patterns) {
+export function isIgnored(relativePath, patterns = []) {
   for (const pattern of patterns) {
-    // Simple prefix/glob matching (**, *, ?)
     if (matchGlob(pattern, relativePath)) return true;
   }
   return false;
 }
 
 /**
- * Minimal glob matcher supporting * and ** wildcards.
- * Used for ignore patterns in .secretshield.json.
- * Does NOT use shell — safe against injection.
+ * Minimal glob matcher supporting prefix paths, wildcards (*, **), and file extensions.
+ * Safe against shell injection.
  */
-function matchGlob(pattern, path) {
+export function matchGlob(pattern, path) {
   const p = pattern.replace(/\\/g, '/');
   const s = path.replace(/\\/g, '/');
 
-  let regexStr = '';
+  if (p === s) return true;
+
+  // Folder prefix matching (e.g. "test-fixtures/**" or "test-fixtures/")
+  const cleanPrefix = p.replace(/\/\*\*$/, '').replace(/\/\*$/, '').replace(/\/$/, '');
+  if (cleanPrefix && (s === cleanPrefix || s.startsWith(cleanPrefix + '/'))) return true;
+
+  // Convert glob to regex
+  let regex = '';
   let i = 0;
   while (i < p.length) {
-    if (p.slice(i, i + 2) === '**') {
-      if (p[i + 2] === '/') {
-        regexStr += '(?:.+/)?';
-        i += 3;
-      } else {
-        regexStr += '.*';
-        i += 2;
-      }
-    } else if (p[i] === '*') {
-      regexStr += '[^/]*';
+    const c = p[i];
+    if (c === '*' && p[i + 1] === '*' && p[i + 2] === '/') {
+      regex += '(?:.+/)?';
+      i += 3;
+    } else if (c === '*' && p[i + 1] === '*') {
+      regex += '.*';
+      i += 2;
+    } else if (c === '*') {
+      regex += '[^/]*';
       i += 1;
-    } else if (p[i] === '?') {
-      regexStr += '[^/]';
+    } else if (c === '?') {
+      regex += '[^/]';
       i += 1;
-    } else if (['.', '+', '^', '$', '(', ')', '[', ']', '{', '}', '|', '\\'].includes(p[i])) {
-      regexStr += '\\' + p[i];
+    } else if ('[\\^$.|?*+()'.includes(c)) {
+      regex += '\\' + c;
       i += 1;
     } else {
-      regexStr += p[i];
+      regex += c;
       i += 1;
     }
   }
 
   try {
-    const regex = new RegExp(`^${regexStr}$|^${regexStr}/`);
-    return regex.test(s) || regex.test(s + '/');
+    const re = new RegExp(`^(?:${regex})$`);
+    if (re.test(s)) return true;
+    if (!p.includes('/')) {
+      const filename = s.split('/').pop();
+      if (re.test(filename)) return true;
+    }
+    return false;
   } catch {
     return false;
   }
