@@ -58,6 +58,7 @@ program
   .option('--verbose',   'Show extra detail (rule matches, confidence scores)')
   .option('--config <file>', 'Path to configuration file (default: .secretshield.json)')
   .option('--baseline <file>', 'Baseline file to exclude known findings')
+  .option('--ignore <patterns>', 'Comma-separated glob patterns to ignore (e.g. "test/**,fixtures/**")')
   .option('--fail-on <severity>', 'Severity threshold that triggers exit code 1 (default: low)', 'low')
   .action(async (scanPath, opts) => {
     const { runScan } = await import('../lib/commands/scan.js');
@@ -99,6 +100,7 @@ program
   .option('--verbose',    'Show extra detail')
   .option('--config <file>', 'Path to configuration file')
   .option('--baseline <file>', 'Baseline file to exclude known findings')
+  .option('--ignore <patterns>', 'Comma-separated glob patterns to ignore')
   .option('--fail-on <severity>', 'Severity threshold (default: high)', 'high')
   .option('--pr',         'PR-aware mode: scan only changed files when possible')
   .action(async (opts) => {
@@ -118,6 +120,7 @@ policy
   .option('--dry-run',        'Evaluate policies without failing CI exit code')
   .option('--config <file>',   'Path to configuration file')
   .option('--baseline <file>', 'Baseline file to exclude known findings')
+  .option('--ignore <patterns>', 'Comma-separated glob patterns to ignore')
   .option('--json',           'Output policy evaluation result as JSON')
   .option('--verbose',        'Show detailed condition match trace')
   .action(async (scanPath, opts) => {
@@ -136,6 +139,7 @@ baseline
   .description('Scan and create .secretshield-baseline.json from current findings')
   .option('--config <file>', 'Path to configuration file')
   .option('--output <file>', 'Baseline output file (default: .secretshield-baseline.json)')
+  .option('--ignore <patterns>', 'Comma-separated glob patterns to ignore')
   .action(async (scanPath, opts) => {
     const { createBaseline } = await import('../lib/commands/baseline.js');
     const exitCode = await createBaseline(scanPath || '.', opts);
@@ -165,6 +169,7 @@ baseline
   .description('Update baseline: add new findings, keep existing ones')
   .option('--config <file>', 'Path to configuration file')
   .option('--baseline <file>', 'Baseline file to update (default: .secretshield-baseline.json)')
+  .option('--ignore <patterns>', 'Comma-separated glob patterns to ignore')
   .action(async (scanPath, opts) => {
     const { updateBaseline } = await import('../lib/commands/baseline.js');
     const exitCode = await updateBaseline(scanPath || '.', opts);

@@ -30,6 +30,7 @@ export async function runCi(opts = {}) {
     baseline = null,
     failOn   = 'high',
     pr       = false,
+    ignore   = null,
   } = opts;
 
   const quiet_mode = quiet || json || sarif;
@@ -39,6 +40,12 @@ export async function runCi(opts = {}) {
 
   // ── CONFIG ──────────────────────────────────────────────────────────────────
   const { config: cfg, warnings } = loadConfig(config, cwd);
+
+  const cliIgnores = ignore
+    ? (Array.isArray(ignore) ? ignore : String(ignore).split(',')).map(s => s.trim()).filter(Boolean)
+    : [];
+  const effectiveIgnore = Array.from(new Set([...(cfg.ignore || []), ...cliIgnores]));
+
   if (!quiet_mode) {
     printBanner(quiet);
     printWarnings(warnings, quiet);
@@ -84,12 +91,12 @@ export async function runCi(opts = {}) {
     files = readFiles(changedPaths, {
       maxFileSize: cfg.scan.maxFileSize,
       root:        gitRoot,
-    }).filter(f => !isIgnored(f.name, cfg.ignore));
+    }).filter(f => !isIgnored(f.name, effectiveIgnore));
 
   } else {
     // Full scan
     files = collectFiles(cwd, {
-      ignorePatterns: cfg.ignore,
+      ignorePatterns: effectiveIgnore,
       maxFileSize:    cfg.scan.maxFileSize,
       root:           cwd,
     });

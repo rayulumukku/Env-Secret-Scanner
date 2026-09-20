@@ -45,6 +45,7 @@ export async function runScan(scanPath, opts = {}) {
     config    = null,
     baseline  = null,
     failOn    = 'low',
+    ignore    = null,
   } = opts;
 
   const quiet_mode = quiet || json || sarif;
@@ -52,6 +53,11 @@ export async function runScan(scanPath, opts = {}) {
   // ── LOAD CONFIG ────────────────────────────────────────────────────────────
   const cwd = resolve(scanPath || process.cwd());
   const { config: cfg, warnings } = loadConfig(config, cwd);
+
+  const cliIgnores = ignore
+    ? (Array.isArray(ignore) ? ignore : String(ignore).split(',')).map(s => s.trim()).filter(Boolean)
+    : [];
+  const effectiveIgnore = Array.from(new Set([...(cfg.ignore || []), ...cliIgnores]));
 
   if (!json && !sarif) {
     printBanner(quiet);
@@ -117,7 +123,7 @@ export async function runScan(scanPath, opts = {}) {
       printScanStart({ target: scanPath || '.', mode }, quiet);
     }
     files = collectFiles(resolve(scanPath || '.'), {
-      ignorePatterns: cfg.ignore,
+      ignorePatterns: effectiveIgnore,
       maxFileSize:    cfg.scan.maxFileSize,
       root:           resolve(scanPath || '.'),
     });

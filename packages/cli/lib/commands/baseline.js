@@ -29,6 +29,11 @@ export async function createBaseline(scanPath, opts = {}) {
     : resolve(cwd, DEFAULT_BASELINE_FILE);
 
   const { config: cfg, warnings } = loadConfig(opts.config, cwd);
+  const cliIgnores = opts.ignore
+    ? (Array.isArray(opts.ignore) ? opts.ignore : String(opts.ignore).split(',')).map(s => s.trim()).filter(Boolean)
+    : [];
+  const effectiveIgnore = Array.from(new Set([...(cfg.ignore || []), ...cliIgnores]));
+
   printBanner();
   printWarnings(warnings);
 
@@ -43,7 +48,7 @@ export async function createBaseline(scanPath, opts = {}) {
   }
 
   const files = collectFiles(cwd, {
-    ignorePatterns: cfg.ignore,
+    ignorePatterns: effectiveIgnore,
     maxFileSize:    cfg.scan.maxFileSize,
     root:           cwd,
   });
@@ -135,6 +140,11 @@ export async function updateBaseline(scanPath, opts = {}) {
     : resolve(cwd, DEFAULT_BASELINE_FILE);
 
   const { config: cfg, warnings } = loadConfig(opts.config, cwd);
+  const cliIgnores = opts.ignore
+    ? (Array.isArray(opts.ignore) ? opts.ignore : String(opts.ignore).split(',')).map(s => s.trim()).filter(Boolean)
+    : [];
+  const effectiveIgnore = Array.from(new Set([...(cfg.ignore || []), ...cliIgnores]));
+
   printWarnings(warnings);
 
   // Load existing
@@ -154,7 +164,7 @@ export async function updateBaseline(scanPath, opts = {}) {
   }
 
   const files = collectFiles(cwd, {
-    ignorePatterns: cfg.ignore,
+    ignorePatterns: effectiveIgnore,
     maxFileSize:    cfg.scan.maxFileSize,
     root:           cwd,
   });
