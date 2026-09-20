@@ -433,3 +433,104 @@ model AuditLog {
   @@index([targetType])
   @@index([createdAt])
 }
+
+// ── EXPOSURE INTELLIGENCE & ATTACK-PATH MODELS ─────────────────────────────────
+
+model ExposureCluster {
+  id             String    @id @default(cuid())
+  organizationId String
+  fingerprint    String
+  ruleId         String
+  severity       FindingSeverity @default(HIGH)
+  status         String    @default("ACTIVE") // ACTIVE | ROTATION_REQUIRED | REMEDIATED | VERIFIED
+  repositoryCount Int      @default(1)
+  findingCount   Int       @default(1)
+  firstSeenAt    DateTime  @default(now())
+  lastSeenAt     DateTime  @default(now())
+  resolvedAt     DateTime?
+  metadataJson   String?   // JSON representation of cluster attributes (never raw secrets)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  events         ExposureEvent[]
+
+  @@unique([organizationId, fingerprint])
+  @@index([organizationId])
+  @@index([fingerprint])
+  @@index([status])
+  @@index([severity])
+}
+
+model ExposureEvent {
+  id             String    @id @default(cuid())
+  clusterId      String?
+  organizationId String
+  fingerprint    String
+  eventType      String    // FIRST_INTRODUCED | FIRST_DETECTED | BRANCH_PROPAGATION | CROSS_REPO | DELETED | RESURFACED | REMEDIATED | VERIFIED
+  sourceType     String    // SCANNER_RESULT | GIT_COMMIT | GIT_DIFF | REPO_METADATA | PR_EVENT | REMEDIATION_EVENT
+  sourceId       String
+  repositoryId   String?
+  commitHash     String?
+  branch         String?
+  file           String?
+  timestamp      DateTime  @default(now())
+  detailsJson    String?   // Non-sensitive structured details
+
+  cluster        ExposureCluster? @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([fingerprint])
+  @@index([clusterId])
+  @@index([timestamp])
+}
+
+model Evidence {
+  id             String    @id @default(cuid())
+  organizationId String
+  fingerprint    String?
+  type           String    // SCANNER_RESULT | GIT_COMMIT | GIT_DIFF | REPO_METADATA | PR_EVENT | REMEDIATION_EVENT | VERIFICATION_SCAN | POLICY_EVALUATION
+  sourceId       String
+  repositoryId   String?
+  commitHash     String?
+  confidence     Int       @default(100)
+  summary        String
+  timestamp      DateTime  @default(now())
+  metadataJson   String?
+
+  @@index([organizationId])
+  @@index([fingerprint])
+  @@index([type])
+  @@index([sourceId])
+}
+
+model FingerprintRelation {
+  id             String    @id @default(cuid())
+  organizationId String
+  fingerprintA   String
+  fingerprintB   String
+  relationType   String    // IDENTICAL_VALUE | SAME_PROVIDER | CO_OCCURRING
+  evidenceId     String?
+  createdAt      DateTime  @default(now())
+
+  @@unique([organizationId, fingerprintA, fingerprintB, relationType])
+  @@index([organizationId])
+  @@index([fingerprintA])
+  @@index([fingerprintB])
+}
+
+model Investigation {
+  id             String    @id @default(cuid())
+  organizationId String
+  fingerprint    String
+  assignedToId   String?
+  status         String    @default("IN_PROGRESS") // OPEN | IN_PROGRESS | RESOLVED | FALSE_POSITIVE
+  notes          String?
+  findingsCount  Int       @default(1)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([organizationId, fingerprint])
+  @@index([organizationId])
+  @@index([fingerprint])
+  @@index([status])
+}

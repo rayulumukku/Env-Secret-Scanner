@@ -201,6 +201,56 @@ program
     process.exit(exitCode);
   });
 
+// ── EXPOSURE COMMAND ──────────────────────────────────────────────────────────
+program
+  .command('exposure [action] [target]')
+  .description('Inspect secret exposure clusters and duration metrics')
+  .option('--json', 'Output results as JSON')
+  .option('--repository <repo>', 'Filter by repository')
+  .option('--status <status>', 'Filter by lifecycle status')
+  .action(async (action, target, opts) => {
+    const { exposureCommand } = await import('../lib/commands/exposure.js');
+    const exitCode = await exposureCommand(action, target, opts);
+    process.exit(exitCode);
+  });
+
+// ── HISTORY COMMAND ───────────────────────────────────────────────────────────
+program
+  .command('history')
+  .description('Trace chronological exposure events and Git propagations for a fingerprint')
+  .option('--fingerprint <hash>', 'Target secret fingerprint')
+  .option('--json', 'Output results as JSON')
+  .action(async (opts) => {
+    const { historyCommand } = await import('../lib/commands/exposure.js');
+    const exitCode = await historyCommand(opts);
+    process.exit(exitCode);
+  });
+
+// ── GRAPH COMMAND ─────────────────────────────────────────────────────────────
+program
+  .command('graph')
+  .description('View evidence-backed dependency and attack-path topology graph')
+  .option('--repository <repo>', 'Filter by repository')
+  .option('--fingerprint <hash>', 'Focus on specific fingerprint')
+  .option('--depth <depth>', 'Maximum traversal depth', '4')
+  .option('--json', 'Output graph topology as JSON')
+  .action(async (opts) => {
+    const { graphCommand } = await import('../lib/commands/exposure.js');
+    const exitCode = await graphCommand(opts);
+    process.exit(exitCode);
+  });
+
+// ── INVESTIGATE COMMAND ───────────────────────────────────────────────────────
+program
+  .command('investigate <fingerprint>')
+  .description('Run comprehensive security investigation for a secret fingerprint')
+  .option('--json', 'Output results as JSON')
+  .action(async (fingerprint, opts) => {
+    const { exposureCommand } = await import('../lib/commands/exposure.js');
+    const exitCode = await exposureCommand('investigate', fingerprint, opts);
+    process.exit(exitCode);
+  });
+
 program.parseAsync(process.argv).catch(err => {
   console.error('SecretShield error:', err.message);
   process.exit(2);

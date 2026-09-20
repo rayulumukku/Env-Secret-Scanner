@@ -61,6 +61,11 @@ class MemoryStore {
     this.ruleSubmissions = new Map();
     this.ruleReviews = [];
     this.ruleTestFixtures = new Map();
+    this.exposureClusters = new Map();
+    this.exposureEvents = [];
+    this.evidenceRecords = new Map();
+    this.fingerprintRelations = [];
+    this.investigations = new Map();
   }
 }
 
