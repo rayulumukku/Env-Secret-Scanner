@@ -14,6 +14,7 @@ dist/
 
 # Testing & Coverage
 coverage/
+*.sarif
 
 # Misc
 .DS_Store

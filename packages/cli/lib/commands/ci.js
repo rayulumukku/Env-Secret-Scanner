@@ -12,7 +12,7 @@
  */
 
 import { resolve } from 'path';
-import { existsSync } from 'fs';
+import { existsSync, writeFileSync } from 'fs';
 import { collectFiles, readFiles, getScanner, isIgnored } from '../scanner-bridge.js';
 import { loadConfig, meetsThreshold } from '../config.js';
 import { loadBaseline, filterAgainstBaseline } from '../baseline.js';
@@ -28,12 +28,13 @@ export async function runCi(opts = {}) {
     verbose  = false,
     config   = null,
     baseline = null,
-    failOn   = 'high',
+    failOn   = null,
+    severity = null,
     pr       = false,
     ignore   = null,
   } = opts;
 
-  const quiet_mode = quiet || json || sarif;
+  const quiet_mode = quiet || json || (sarif === true);
   const cwd        = process.env.GITHUB_WORKSPACE
     ? resolve(process.env.GITHUB_WORKSPACE)
     : process.cwd();
@@ -117,7 +118,7 @@ export async function runCi(opts = {}) {
   // ── FILTER ──────────────────────────────────────────────────────────────────
   const { active, suppressed } = filterAgainstBaseline(result.findings || [], baselineFingerprints);
 
-  const threshold      = opts.failOn || cfg.severityThreshold || 'high';
+  const threshold      = severity || failOn || cfg.severityThreshold || 'high';
   const aboveThreshold = active.filter(f => meetsThreshold(f.severity, threshold));
 
   const stats = {
@@ -130,6 +131,17 @@ export async function runCi(opts = {}) {
   };
 
   // ── OUTPUT ──────────────────────────────────────────────────────────────────
+  if (typeof sarif === 'string') {
+    const repoUri  = prCtx.repo ? `https://github.com/${prCtx.repo}` : null;
+    const sarifOutput = toSarif(aboveThreshold, { repoUri, commitSha: prCtx.sha });
+    try {
+      writeFileSync(resolve(cwd, sarif), sarifOutput, 'utf8');
+      if (!quiet) console.log(`  ✓ SARIF report saved to: ${sarif}`);
+    } catch (err) {
+      console.error(`Failed to write SARIF report: ${err.message}`);
+    }
+  }
+
   if (json) {
     const output = {
       tool:       'SecretShield',
@@ -147,7 +159,7 @@ export async function runCi(opts = {}) {
     };
     console.log(JSON.stringify(output, null, 2));
 
-  } else if (sarif) {
+  } else if (sarif === true) {
     const repoUri  = prCtx.repo ? `https://github.com/${prCtx.repo}` : null;
     console.log(toSarif(aboveThreshold, { repoUri, commitSha: prCtx.sha }));
 

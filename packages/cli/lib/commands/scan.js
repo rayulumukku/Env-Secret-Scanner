@@ -20,7 +20,7 @@
  */
 
 import { resolve } from 'path';
-import { existsSync } from 'fs';
+import { existsSync, writeFileSync } from 'fs';
 import { collectFiles, readFiles, getScanner } from '../scanner-bridge.js';
 import { loadConfig, meetsThreshold } from '../config.js';
 import { loadBaseline, filterAgainstBaseline } from '../baseline.js';
@@ -44,11 +44,12 @@ export async function runScan(scanPath, opts = {}) {
     verbose   = false,
     config    = null,
     baseline  = null,
-    failOn    = 'low',
+    failOn    = null,
+    severity  = null,
     ignore    = null,
   } = opts;
 
-  const quiet_mode = quiet || json || sarif;
+  const quiet_mode = quiet || json || (sarif === true);
 
   // ── LOAD CONFIG ────────────────────────────────────────────────────────────
   const cwd = resolve(scanPath || process.cwd());
@@ -59,7 +60,7 @@ export async function runScan(scanPath, opts = {}) {
     : [];
   const effectiveIgnore = Array.from(new Set([...(cfg.ignore || []), ...cliIgnores]));
 
-  if (!json && !sarif) {
+  if (!json && sarif !== true) {
     printBanner(quiet);
     printWarnings(warnings, quiet);
   }
@@ -144,7 +145,7 @@ export async function runScan(scanPath, opts = {}) {
   // ── FILTER BY BASELINE & SEVERITY ─────────────────────────────────────────
   const { active, suppressed } = filterAgainstBaseline(result.findings || [], baselineFingerprints);
 
-  const effectiveThreshold = opts.failOn || cfg.severityThreshold || 'low';
+  const effectiveThreshold = severity || failOn || cfg.severityThreshold || 'low';
   const aboveThreshold     = active.filter(f => meetsThreshold(f.severity, effectiveThreshold));
 
   const stats = {
@@ -157,6 +158,16 @@ export async function runScan(scanPath, opts = {}) {
   };
 
   // ── OUTPUT ─────────────────────────────────────────────────────────────────
+  if (typeof sarif === 'string') {
+    const sarifOutput = toSarif(aboveThreshold, { repoUri: null, commitSha: null });
+    try {
+      writeFileSync(resolve(cwd, sarif), sarifOutput, 'utf8');
+      if (!quiet) console.log(`  ✓ SARIF report saved to: ${sarif}`);
+    } catch (err) {
+      console.error(`Failed to write SARIF report: ${err.message}`);
+    }
+  }
+
   if (json) {
     // JSON output — structured, no ANSI, no raw secrets
     console.log(JSON.stringify({
@@ -169,7 +180,7 @@ export async function runScan(scanPath, opts = {}) {
       findings:   aboveThreshold.map(safeFinding),
     }, null, 2));
 
-  } else if (sarif) {
+  } else if (sarif === true) {
     console.log(toSarif(aboveThreshold, {
       repoUri: null,
       commitSha: null,

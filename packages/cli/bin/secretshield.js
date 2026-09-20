@@ -53,13 +53,14 @@ program
   .option('--history',   'Also scan Git commit history')
   .option('--diff [file]', 'Scan unified diff text from file or stdin')
   .option('--json',      'Output findings as JSON')
-  .option('--sarif',     'Output findings as SARIF 2.1.0')
+  .option('--sarif [file]', 'Output findings as SARIF 2.1.0 (or save to file)')
   .option('--quiet',     'Suppress informational output')
   .option('--verbose',   'Show extra detail (rule matches, confidence scores)')
   .option('--config <file>', 'Path to configuration file (default: .secretshield.json)')
   .option('--baseline <file>', 'Baseline file to exclude known findings')
   .option('--ignore <patterns>', 'Comma-separated glob patterns to ignore (e.g. "test/**,fixtures/**")')
-  .option('--fail-on <severity>', 'Severity threshold that triggers exit code 1 (default: low)', 'low')
+  .option('--fail-on <severity>', 'Severity threshold that triggers exit code 1 (default: low)')
+  .option('--severity <severity>', 'Severity threshold alias for --fail-on')
   .action(async (scanPath, opts) => {
     const { runScan } = await import('../lib/commands/scan.js');
     const exitCode = await runScan(scanPath || '.', opts);
@@ -95,13 +96,14 @@ program
   .command('ci')
   .description('CI mode — scan repository, exit 1 on findings above threshold')
   .option('--json',       'Output findings as JSON')
-  .option('--sarif',      'Output findings as SARIF 2.1.0')
+  .option('--sarif [file]', 'Output findings as SARIF 2.1.0 (or save to file)')
   .option('--quiet',      'Suppress informational output (only emit JSON/SARIF)')
   .option('--verbose',    'Show extra detail')
   .option('--config <file>', 'Path to configuration file')
   .option('--baseline <file>', 'Baseline file to exclude known findings')
   .option('--ignore <patterns>', 'Comma-separated glob patterns to ignore')
-  .option('--fail-on <severity>', 'Severity threshold (default: high)', 'high')
+  .option('--fail-on <severity>', 'Severity threshold (default: high)')
+  .option('--severity <severity>', 'Severity threshold alias for --fail-on')
   .option('--pr',         'PR-aware mode: scan only changed files when possible')
   .action(async (opts) => {
     const { runCi } = await import('../lib/commands/ci.js');

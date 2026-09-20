@@ -52,10 +52,23 @@ runs:
       with:
         node-version: '20'
 
+    - name: Install SecretShield dependencies
+      shell: bash
+      run: |
+        ACTION_DIR="${{ github.action_path }}"
+        if [ -f "$ACTION_DIR/package.json" ]; then
+          if [ ! -d "$ACTION_DIR/node_modules/commander" ] && [ ! -d "$ACTION_DIR/packages/cli/node_modules/commander" ]; then
+            npm --prefix "$ACTION_DIR" ci --omit=dev || npm --prefix "$ACTION_DIR" install --omit=dev
+          fi
+        fi
+
     - name: Run SecretShield Scanner
       id: scan
       shell: bash
       run: |
+        ACTION_DIR="${{ github.action_path }}"
+        CLI_BIN="$ACTION_DIR/packages/cli/bin/secretshield.js"
+
         ARGS="${{ inputs.path }} --sarif ${{ inputs.sarif-file }} --severity ${{ inputs.fail-on }}"
         
         if [ "${{ inputs.diff-only }}" = "true" ]; then
@@ -71,10 +84,10 @@ runs:
         fi
 
         echo "Running SecretShield with arguments: $ARGS"
-        node packages/cli/bin/secretshield.js scan $ARGS
+        node "$CLI_BIN" scan $ARGS
 
     - name: Upload SARIF to GitHub Code Scanning
-      if: inputs.upload-sarif == 'true' && always()
+      if: inputs.upload-sarif == 'true' && always() && hashFiles(inputs.sarif-file) != ''
       uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: ${{ inputs.sarif-file }}
