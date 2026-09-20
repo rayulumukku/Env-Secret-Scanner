@@ -7,8 +7,8 @@
     "secretshield": "./bin/secretshield.js"
   },
   "scripts": {
-    "test": "node --test __tests__/**/*.test.js",
-    "test:all": "node --test __tests__/cli.test.js __tests__/sarif.test.js __tests__/baseline.test.js __tests__/config.test.js"
+    "test": "node --test",
+    "test:all": "node --test"
   },
   "dependencies": {
     "commander": "^12.1.0"
