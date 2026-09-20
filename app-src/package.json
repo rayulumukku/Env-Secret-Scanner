@@ -2,7 +2,6 @@
   "name": "secretshield-web",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -38,5 +37,17 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
     "tailwindcss": "^4"
+  },
+  "optionalDependencies": {
+    "lightningcss-linux-x64-gnu": ">=1.29.0",
+    "lightningcss-linux-x64-musl": ">=1.29.0",
+    "lightningcss-win32-x64-msvc": ">=1.29.0",
+    "lightningcss-darwin-arm64": ">=1.29.0",
+    "lightningcss-darwin-x64": ">=1.29.0",
+    "@next/swc-linux-x64-gnu": "16.3.5",
+    "@next/swc-linux-x64-musl": "16.3.5",
+    "@next/swc-win32-x64-msvc": "16.3.5",
+    "@next/swc-darwin-arm64": "16.3.5",
+    "@next/swc-darwin-x64": "16.3.5"
   }
 }
