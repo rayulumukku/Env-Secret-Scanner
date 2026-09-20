@@ -53,6 +53,30 @@ export const PERMISSIONS = {
   AUDIT_VIEW:           ['OWNER', 'ADMIN'],
 };
 
+export const GLOBAL_PERMISSIONS = {
+  GLOBAL_ADMIN_ACCESS:        ['SUPERADMIN', 'GLOBAL_ADMIN'],
+  GLOBAL_FEATURE_FLAG_MANAGE: ['SUPERADMIN', 'GLOBAL_ADMIN'],
+  GLOBAL_MAINTENANCE_MANAGE:  ['SUPERADMIN', 'GLOBAL_ADMIN'],
+  GLOBAL_ANNOUNCEMENT_MANAGE: ['SUPERADMIN', 'GLOBAL_ADMIN'],
+  GLOBAL_FEEDBACK_MANAGE:     ['SUPERADMIN', 'GLOBAL_ADMIN'],
+  GLOBAL_ANALYTICS_VIEW:      ['SUPERADMIN', 'GLOBAL_ADMIN'],
+};
+
+/**
+ * Check if a user is authorized for global application administration.
+ * Ordinary organization owners/admins do NOT have global application access.
+ *
+ * @param {object} user - user object with { role, isGlobalAdmin, email }
+ * @returns {boolean}
+ */
+export function isGlobalAdmin(user) {
+  if (!user) return false;
+  if (user.isGlobalAdmin === true) return true;
+  if (user.role === 'SUPERADMIN' || user.role === 'GLOBAL_ADMIN') return true;
+  if (process.env.ADMIN_EMAIL && user.email && user.email.toLowerCase() === process.env.ADMIN_EMAIL.toLowerCase()) return true;
+  return false;
+}
+
 /**
  * Check if a role has a specific permission.
  * @param {string} role
@@ -61,7 +85,7 @@ export const PERMISSIONS = {
  */
 export function hasPermission(role, permission) {
   if (!role || !permission) return false;
-  const allowedRoles = PERMISSIONS[permission];
+  const allowedRoles = PERMISSIONS[permission] || GLOBAL_PERMISSIONS[permission];
   if (!allowedRoles) return false;
   return allowedRoles.includes(role);
 }

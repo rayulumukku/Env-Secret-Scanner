@@ -8,6 +8,8 @@ import {
   Info, ExternalLink, RefreshCw, Zap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AnnouncementBanner } from '@/components/announcements/AnnouncementBanner';
+import { OnboardingChecklist } from '@/components/onboarding/OnboardingChecklist';
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
@@ -122,6 +124,16 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background pb-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+
+        {/* Global In-App Announcements */}
+        <div className="mb-6">
+          <AnnouncementBanner />
+        </div>
+
+        {/* Getting Started Onboarding Checklist */}
+        <div className="mb-6">
+          <OnboardingChecklist />
+        </div>
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">

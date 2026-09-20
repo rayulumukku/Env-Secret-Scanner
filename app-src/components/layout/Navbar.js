@@ -14,12 +14,13 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   Shield, Menu, X, Zap, User, LogOut, Settings,
   FolderGit2, Search, Users, Activity, FileText,
-  Lock, BarChart3, HelpCircle
+  Lock, BarChart3, HelpCircle, MessageSquare, Sparkles, Sliders
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { OrgSwitcher } from './OrgSwitcher';
 import { NotificationBell } from './NotificationBell';
 import { CommandPalette } from './CommandPalette';
+import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 
 const NAV_LINKS = [
   { href: '/dashboard',          label: 'Dashboard' },
@@ -29,6 +30,7 @@ const NAV_LINKS = [
   { href: '/integrations',       label: 'Integrations' },
   { href: '/scan',               label: 'Scanner' },
   { href: '/rules',              label: 'Rules' },
+  { href: '/tour',               label: 'Tour' },
   { href: '/docs',               label: 'Docs' },
   { href: '/status',             label: 'Status' },
 ];
@@ -39,6 +41,7 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -60,28 +63,30 @@ export function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/50 bg-background/85 backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Left: Brand + Org Switcher */}
-          <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="relative">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-center group-hover:border-primary/60 transition-colors">
-                  <Shield className="w-4.5 h-4.5 text-primary" />
+    <>
+      <FeedbackModal isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+      <header className="sticky top-0 z-40 border-b border-border/50 bg-background/85 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Left: Brand + Org Switcher */}
+            <div className="flex items-center gap-4">
+              <Link href="/" className="flex items-center gap-2.5 group">
+                <div className="relative">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-center group-hover:border-primary/60 transition-colors">
+                    <Shield className="w-4.5 h-4.5 text-primary" />
+                  </div>
+                  <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary rounded-full pulse-ring" />
                 </div>
-                <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary rounded-full pulse-ring" />
-              </div>
-              <div className="hidden sm:block">
-                <span className="font-bold text-base tracking-tight text-foreground">
-                  Secret<span className="text-primary">Shield</span>
-                </span>
-                <div className="text-[10px] text-muted-foreground leading-none font-mono">v0.4.0</div>
-              </div>
-            </Link>
+                <div className="hidden sm:block">
+                  <span className="font-bold text-base tracking-tight text-foreground">
+                    Secret<span className="text-primary">Shield</span>
+                  </span>
+                  <div className="text-[10px] text-muted-foreground leading-none font-mono">v1.0.0</div>
+                </div>
+              </Link>
 
-            <OrgSwitcher />
-          </div>
+              <OrgSwitcher />
+            </div>
 
           {/* Desktop nav links */}
           <nav className="hidden xl:flex items-center gap-1">
@@ -104,7 +109,18 @@ export function Navbar() {
           </nav>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
+            {/* Feedback Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setFeedbackOpen(true)}
+              className="hidden lg:flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground h-8 px-2.5"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>Feedback</span>
+            </Button>
+
             {/* Command Palette Trigger */}
             <CommandPalette />
 
@@ -171,31 +187,33 @@ export function Navbar() {
                       </Link>
 
                       <Link
-                        href="/settings/members"
+                        href="/support"
                         onClick={() => setUserMenuOpen(false)}
                         className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-secondary text-foreground transition-colors"
                       >
-                        <Users className="w-3.5 h-3.5 text-muted-foreground" />
-                        Team Members
+                        <HelpCircle className="w-3.5 h-3.5 text-muted-foreground" />
+                        Support Center
                       </Link>
 
                       <Link
-                        href="/settings/audit-log"
+                        href="/changelog"
                         onClick={() => setUserMenuOpen(false)}
                         className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-secondary text-foreground transition-colors"
                       >
-                        <Activity className="w-3.5 h-3.5 text-muted-foreground" />
-                        Audit Log
+                        <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+                        Changelog & Releases
                       </Link>
 
-                      <Link
-                        href="/settings/system-health"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-secondary text-foreground transition-colors"
-                      >
-                        <Shield className="w-3.5 h-3.5 text-muted-foreground" />
-                        System Health
-                      </Link>
+                      {(user.role === 'ADMIN' || user.role === 'SUPERADMIN' || user.isGlobalAdmin) && (
+                        <Link
+                          href="/admin"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors font-medium border-t border-border/40 mt-1 pt-1.5"
+                        >
+                          <Sliders className="w-3.5 h-3.5" />
+                          Global Admin
+                        </Link>
+                      )}
 
                       <div className="border-t border-border/40 my-1 pt-1">
                         <button
@@ -259,6 +277,7 @@ export function Navbar() {
         </div>
       )}
     </header>
+    </>
   );
 }
 

@@ -79,7 +79,7 @@ export default function LandingPage() {
             </h1>
 
             <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed">
-              Scan repositories, commits, pull requests, and local changes for exposed credentials — without sending your source code to an AI service.
+              Scan source code, Git history, pull requests, and local changes for exposed credentials — without relying on external AI services.
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
@@ -89,10 +89,16 @@ export default function LandingPage() {
                   Scan a Repository
                 </Button>
               </Link>
+              <Link href="/tour">
+                <Button variant="outline" size="lg" className="gap-2 font-semibold text-base px-7 border-border/70 hover:border-primary/50">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  Interactive Tour
+                </Button>
+              </Link>
               <a href="#demo-section">
-                <Button variant="outline" size="lg" className="gap-2 font-semibold text-base px-7 border-border/70">
+                <Button variant="ghost" size="lg" className="gap-2 text-muted-foreground hover:text-foreground">
                   <Terminal className="w-4 h-4" />
-                  Try Demo
+                  Try Live Demo
                 </Button>
               </a>
             </div>
@@ -121,7 +127,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── 2. INTERACTIVE PRODUCT DEMO ───────────────────────────────────────────── */}
-      <section className="py-20 bg-card/10">
+      <section id="demo-section" className="py-20 bg-card/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <Badge variant="outline" className="mb-2 text-xs border-primary/30 text-primary">

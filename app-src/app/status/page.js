@@ -84,6 +84,13 @@ export default function StatusPage() {
       icon: Bell,
       latency: 'Normal',
     },
+    {
+      name: 'Security Command Center & RBAC',
+      description: 'Organization governance, branch protection policies, and audit logs',
+      status: 'OPERATIONAL',
+      icon: Shield,
+      latency: 'Normal',
+    },
   ];
 
   const allOperational = components.every(c => c.status === 'OPERATIONAL');
