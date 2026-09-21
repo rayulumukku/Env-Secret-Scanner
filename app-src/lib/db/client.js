@@ -77,6 +77,18 @@ class MemoryStore {
     this.incidentEvents = [];
     this.incidentNotes = [];
     this.scheduledScans = new Map();
+    this.controls = new Map();
+    this.controlVersions = [];
+    this.controlRequirements = [];
+    this.controlEvidence = new Map();
+    this.controlAssessments = [];
+    this.securityQuestionnaires = new Map();
+    this.accessReviews = new Map();
+    this.credentialInventories = new Map();
+    this.trustReports = new Map();
+    this.securityAdvisories = new Map();
+    this.trustPolicies = new Map();
+    this.trustSettings = new Map();
   }
 }
 

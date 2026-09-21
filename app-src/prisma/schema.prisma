@@ -858,3 +858,239 @@ model ScheduledScan {
   @@index([nextRunAt])
 }
 
+// ── ENTERPRISE TRUST, COMPLIANCE & EVIDENCE CENTER ───────────────────────────
+
+model Control {
+  id                       String               @id @default(cuid())
+  organizationId           String
+  code                     String               // e.g. SEC-AUTH-01, SEC-ENC-02
+  name                     String
+  description              String
+  category                 String               // ARCHITECTURE | DATA_HANDLING | ENCRYPTION | AUTHENTICATION | AUTHORIZATION | AUDIT_LOGGING | RETENTION | VULNERABILITY_MGMT | INCIDENT_RESPONSE | BACKUP_RECOVERY | SECURE_DEV | SECRET_HANDLING | INTEGRATIONS | AI_PRIVACY | INFRASTRUCTURE
+  implementationStatus     String               @default("IMPLEMENTED") // IMPLEMENTED | PARTIALLY_IMPLEMENTED | PLANNED | NOT_IMPLEMENTED | NOT_APPLICABLE
+  owner                    String               @default("Security Team")
+  version                  String               @default("1.0.0")
+  lastReviewedAt           DateTime             @default(now())
+  nextReviewAt             DateTime?
+  isPublic                 Boolean              @default(false)
+  evidenceRequirementsJson String?              // JSON array of evidence requirement strings
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @updatedAt
+
+  versions                 ControlVersion[]
+  requirements             ControlRequirement[]
+  evidence                 ControlEvidence[]
+  assessments              ControlAssessment[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@index([category])
+  @@index([implementationStatus])
+  @@index([isPublic])
+}
+
+model ControlVersion {
+  id                   String    @id @default(cuid())
+  controlId            String
+  version              String
+  name                 String
+  description          String
+  category             String
+  implementationStatus String
+  changelog            String?
+  createdAt            DateTime  @default(now())
+
+  control              Control   @relation(fields: [controlId], references: [id], onDelete: Cascade)
+
+  @@unique([controlId, version])
+  @@index([controlId])
+}
+
+model ControlRequirement {
+  id          String    @id @default(cuid())
+  controlId   String
+  title       String
+  description String?
+  isMandatory Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  control     Control   @relation(fields: [controlId], references: [id], onDelete: Cascade)
+
+  @@index([controlId])
+}
+
+model ControlEvidence {
+  id             String    @id @default(cuid())
+  controlId      String
+  organizationId String
+  sourceType     String    // SECURITY_EVENT | AUDIT_LOG | CONFIGURATION | POLICY | INCIDENT | REMEDIATION | SCAN | INTEGRATION | CI_RESULT | ACCESS_REVIEW
+  sourceId       String
+  title          String
+  summary        String
+  integrityHash  String    // SHA-256 canonical hash of evidence content
+  collectedAt    DateTime  @default(now())
+  validUntil     DateTime?
+  isPublic       Boolean   @default(false)
+  metadataJson   String?   // Sanitized non-sensitive metadata only
+  createdAt      DateTime  @default(now())
+
+  control        Control   @relation(fields: [controlId], references: [id], onDelete: Cascade)
+
+  @@index([controlId])
+  @@index([organizationId])
+  @@index([sourceType])
+  @@index([collectedAt])
+}
+
+model ControlAssessment {
+  id             String    @id @default(cuid())
+  controlId      String
+  organizationId String
+  assessor       String
+  status         String    // PASSED | DEFICIENT | UNDER_REVIEW | WAIVED
+  notes          String?
+  findingsJson   String?
+  assessedAt     DateTime  @default(now())
+
+  control        Control   @relation(fields: [controlId], references: [id], onDelete: Cascade)
+
+  @@index([controlId])
+  @@index([organizationId])
+  @@index([assessedAt])
+}
+
+model SecurityQuestionnaire {
+  id             String    @id @default(cuid())
+  organizationId String
+  title          String
+  category       String    // ACCESS_CONTROL | AUTHENTICATION | ENCRYPTION | DATA_PROTECTION | INCIDENT_RESPONSE | LOGGING | RETENTION | BACKUPS | SECURE_DEV | VULNERABILITY_MGMT | INTEGRATIONS | AI_DATA_PROCESSING
+  question       String
+  answer         String    @default("NOT_APPLICABLE") // YES | NO | PARTIALLY | NOT_APPLICABLE
+  explanation    String?
+  evidenceIdsJson String?  // JSON array of evidence reference IDs
+  owner          String    @default("Security Officer")
+  lastReviewedAt DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([organizationId])
+  @@index([category])
+}
+
+model AccessReview {
+  id             String    @id @default(cuid())
+  organizationId String
+  targetType     String    // MEMBER | ROLE | PROJECT_ACCESS | REPO_ACCESS | INTEGRATION_ACCESS | API_CREDENTIAL
+  targetId       String
+  targetName     String
+  currentRole    String
+  status         String    @default("PENDING") // PENDING | REVIEWED | REVOKED | EXPIRED
+  reviewedBy     String?
+  notes          String?
+  dueDate        DateTime?
+  reviewedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([targetType])
+}
+
+model CredentialInventory {
+  id               String    @id @default(cuid())
+  organizationId   String
+  credentialType   String    // API_KEY | OAUTH_TOKEN | ACCESS_TOKEN | PRIVATE_KEY | WEBHOOK_SECRET | SERVICE_ACCOUNT
+  provider         String
+  owner            String?
+  locationMetadata String?   // e.g. repo:backend/services, provider:github
+  fingerprint      String?   // SHA-256 masked fingerprint if found in code
+  rotationStatus   String    @default("ACTIVE") // ACTIVE | ROTATION_REQUIRED | ROTATED | EXPIRED | UNKNOWN
+  lastSeenAt       DateTime  @default(now())
+  expiresAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([organizationId])
+  @@index([fingerprint])
+  @@index([rotationStatus])
+}
+
+model TrustReport {
+  id                   String    @id @default(cuid())
+  organizationId       String
+  reportType           String    // SECURITY_OVERVIEW | CONTROL_EVIDENCE | QUESTIONNAIRE | INCIDENT_EVIDENCE | ACCESS_REVIEW | AI_PRIVACY | INTEGRATION_SECURITY
+  title                String
+  scope                String    @default("Organization Wide")
+  format               String    @default("html") // html | json | csv
+  sectionsJson         String?   // JSON array of included report sections
+  generatedBy          String    @default("System")
+  shareableSlug        String?   @unique
+  isPublic             Boolean   @default(false)
+  sanitizedSummaryJson String?
+  createdAt            DateTime  @default(now())
+
+  @@index([organizationId])
+  @@index([reportType])
+  @@index([shareableSlug])
+}
+
+model SecurityAdvisory {
+  id               String    @id @default(cuid())
+  advisoryId       String    @unique // e.g. SSA-2026-001
+  title            String
+  affectedVersion  String
+  fixedVersion     String
+  severity         String    // CRITICAL | HIGH | MEDIUM | LOW
+  description      String
+  impact           String
+  mitigation       String
+  publishedAt      DateTime  @default(now())
+  referencesJson   String?
+
+  @@index([severity])
+  @@index([publishedAt])
+}
+
+model TrustPolicy {
+  id             String    @id @default(cuid())
+  organizationId String
+  category       String    // SECRET_MANAGEMENT | ACCESS_CONTROL | INCIDENT_RESPONSE | SECURE_DEVELOPMENT | DATA_RETENTION | AI_USAGE | THIRD_PARTY_INTEGRATION
+  title          String
+  summary        String?
+  content        String    // Markdown body of the policy
+  owner          String    @default("Security Lead")
+  version        String    @default("1.0.0")
+  status         String    @default("ACTIVE") // DRAFT | REVIEW | APPROVAL | ACTIVE | RETIRED
+  effectiveDate  DateTime  @default(now())
+  reviewDate     DateTime?
+  approver       String?
+  changeSummary  String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([organizationId])
+  @@index([category])
+  @@index([status])
+}
+
+model TrustSetting {
+  id                     String    @id @default(cuid())
+  organizationId         String    @unique
+  publicCenterEnabled    Boolean   @default(false)
+  organizationSlug       String    @unique
+  publicName             String
+  securityContactEmail   String?
+  securityContactUrl     String?
+  accessReviewIntervalDays Int     @default(90)
+  policyReviewIntervalDays Int     @default(365)
+  securityTestIntervalDays Int     @default(30)
+  integrationReviewDays  Int       @default(90)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  @@index([organizationId])
+  @@index([organizationSlug])
+}
+
+

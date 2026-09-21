@@ -53,6 +53,19 @@ export const DOC_SECTIONS = [
       { slug: 'operations/deployment-checklist', title: 'Production Pre-Flight Checklist', description: 'Mandatory verification checklist prior to launching to production.' },
     ],
   },
+  {
+    category: 'Trust, Compliance & Governance',
+    items: [
+      { slug: 'trust-center', title: 'Enterprise Trust Center Overview', description: 'Factual security architecture, control frameworks, and evidence mapping.' },
+      { slug: 'security-controls', title: 'Security Controls Catalog', description: '15-category normalized controls and implementation status models.' },
+      { slug: 'evidence', title: 'Evidence Mapping & Integrity', description: 'Immutable evidence snapshots with SHA-256 canonical hashing.' },
+      { slug: 'questionnaires', title: 'Security Questionnaires', description: 'Evidence-backed customer security review responses.' },
+      { slug: 'access-reviews', title: 'Access & Credential Reviews', description: 'Periodic governance reviews for members, roles, and API tokens.' },
+      { slug: 'ai-privacy', title: 'AI Privacy & Code Protection', description: 'Deterministic offline execution and zero-secret transmission.' },
+      { slug: 'data-retention', title: 'Data Retention & Cleanup', description: 'Configurable resource lifecycles and verified deletion jobs.' },
+      { slug: 'public-trust-center', title: 'Public Trust Center Mode', description: 'Customer-shareable trust portals with strict privacy isolation.' },
+    ],
+  },
 ];
 
 export const DOC_PAGES = {
@@ -825,4 +838,251 @@ SecretShield provides a completely self-contained, browser + CLI + SaaS experien
 SecretShield scans all text and source files regardless of language, with specialized context analyzers for JavaScript, TypeScript, Python, Go, Java, Rust, Ruby, PHP, JSON, YAML, Shell, and Dockerfiles.
 `,
   },
+
+  'trust-center': {
+    slug: 'trust-center',
+    title: 'Enterprise Trust Center Overview',
+    description: 'Understand SecretShield security architecture, control definitions, and evidence mapping.',
+    category: 'Trust, Compliance & Governance',
+    headings: [
+      { id: 'purpose', title: 'Purpose & Philosophy' },
+      { id: 'factual-controls', title: 'Factual Controls vs Certifications' },
+      { id: 'evidence-chain', title: 'Evidence-Backed Architecture' },
+    ],
+    content: `
+## Purpose & Philosophy
+
+The SecretShield Trust & Compliance Center allows organizations to document, evaluate, and export their technical security controls and evidence.
+
+> [!IMPORTANT]
+> Control mappings in SecretShield are informational technical baselines and do not constitute formal third-party certifications (e.g. SOC 2, ISO 27001, HIPAA, PCI DSS) unless independent certification evidence is formally linked.
+
+## Factual Controls vs Certifications
+
+SecretShield strictly separates:
+1. **Documented Control**: A declared organizational rule or technical measure.
+2. **Collected Evidence**: Immutable, cryptographically hashed system output confirming implementation.
+3. **Organizational Assertion**: Internal operational declarations.
+4. **External Certification**: Authoritative third-party audit reports.
+
+## Evidence-Backed Architecture
+
+Every control status is backed by live telemetry from the scanner engine, audit logs, CI check results, and access review records.
+`,
+  },
+
+  'security-controls': {
+    slug: 'security-controls',
+    title: 'Security Controls Catalog',
+    description: '15-category normalized control framework and implementation lifecycle.',
+    category: 'Trust, Compliance & Governance',
+    headings: [
+      { id: 'categories', title: '15 Control Categories' },
+      { id: 'statuses', title: 'Implementation Statuses' },
+      { id: 'review-cadence', title: 'Review Cadence' },
+    ],
+    content: `
+## 15 Control Categories
+
+The control framework spans all technical layers:
+- Security Architecture
+- Data Handling & Privacy
+- Encryption in Transit & Rest (AES-256-GCM)
+- Authentication & MFA
+- Authorization & RBAC
+- Audit Logging & Integrity
+- Data Retention & Verified Deletion
+- Vulnerability Management & Scanner Rules
+- Incident Response & Playbooks
+- Backup & Disaster Recovery
+- Secure Software Development (SDLC)
+- Secret Handling & Redaction
+- Third-Party Vendor Integrations
+- AI Privacy & Data Minimization
+- Infrastructure & Deployment Isolation
+
+## Implementation Statuses
+
+Controls are tracked using 5 strict statuses:
+- **IMPLEMENTED**: Active with valid, unexpired evidence.
+- **PARTIALLY_IMPLEMENTED**: Partially active or pending full repository rollout.
+- **PLANNED**: Scheduled on engineering roadmap.
+- **NOT_IMPLEMENTED**: Currently inactive.
+- **NOT_APPLICABLE**: Explicitly exempted with documented justification.
+
+## Review Cadence
+
+Controls require periodic administrative review (default 90 or 365 days). Overdue controls are flagged in the Trust Dashboard.
+`,
+  },
+
+  'evidence': {
+    slug: 'evidence',
+    title: 'Evidence Mapping & Integrity',
+    description: 'Tamper-evident snapshots, canonical hashing, and validity windows.',
+    category: 'Trust, Compliance & Governance',
+    headings: [
+      { id: 'integrity-hashing', title: 'SHA-256 Canonical Integrity Hashing' },
+      { id: 'zero-secret-storage', title: 'Zero-Secret Guarantee' },
+      { id: 'evidence-sources', title: 'Supported Evidence Sources' },
+    ],
+    content: `
+## SHA-256 Canonical Integrity Hashing
+
+When evidence is collected from database logs, scan runs, or access reviews, SecretShield computes a deterministic SHA-256 hash of the canonical JSON payload.
+
+## Zero-Secret Guarantee
+
+> [!IMPORTANT]
+> Raw credentials, tokens, and authorization keys are strictly prohibited from entering evidence records. Only masked fingerprints (e.g. \`fp_a7f92bc3\`) and metadata are archived.
+
+## Supported Evidence Sources
+
+- **SECURITY_EVENT**: Continuous monitoring detections.
+- **AUDIT_LOG**: Administrative and authorization changes.
+- **CONFIGURATION**: System encryption and auth settings.
+- **POLICY**: Approved organizational governance documents.
+- **INCIDENT**: Triage and remediation verification records.
+- **SCAN**: In-memory and CI pipeline scan runs.
+- **ACCESS_REVIEW**: Periodic RBAC audit signatures.
+`,
+  },
+
+  'questionnaires': {
+    slug: 'questionnaires',
+    title: 'Security Questionnaires',
+    description: 'Evidence-backed customer security review responses across 12 categories.',
+    category: 'Trust, Compliance & Governance',
+    headings: [
+      { id: 'templates', title: '12 Standard Categories' },
+      { id: 'answer-criteria', title: 'Evidence-Backed Answers' },
+    ],
+    content: `
+## 12 Standard Categories
+
+SecretShield provides pre-populated response templates across common vendor security categories:
+- Access Control
+- Authentication
+- Encryption
+- Data Protection
+- Incident Response
+- Logging & Monitoring
+- Retention
+- Backup & Recovery
+- Secure Development
+- Vulnerability Management
+- Third-Party Integrations
+- AI / Data Processing
+
+## Evidence-Backed Answers
+
+Answers are strictly qualified:
+- **YES**: Control is fully active with attached evidence.
+- **PARTIALLY**: Partial implementation in progress.
+- **NO**: Control is not present.
+- **NOT_APPLICABLE**: Not relevant to operational model.
+`,
+  },
+
+  'access-reviews': {
+    slug: 'access-reviews',
+    title: 'Access & Credential Reviews',
+    description: 'Governance workflows for periodic auditing of members, roles, repositories, and API credentials.',
+    category: 'Trust, Compliance & Governance',
+    headings: [
+      { id: 'targets', title: 'Review Targets' },
+      { id: 'workflow-states', title: 'Workflow States' },
+    ],
+    content: `
+## Review Targets
+
+Administrators conduct periodic governance audits across:
+- **Organization Members & Roles**: Verify Owner, Admin, and Contributor permissions.
+- **Repository Access**: Confirm branch protections and collaborator access.
+- **Integration Webhooks**: Audit active CI/CD connections and OAuth scopes.
+- **API Credentials**: Track metadata-only credential inventories.
+
+## Workflow States
+
+- **PENDING**: Awaiting administrative review.
+- **REVIEWED**: Access confirmed valid.
+- **REVOKED**: Access explicitly disabled.
+- **EXPIRED**: Exceeded review interval without sign-off.
+`,
+  },
+
+  'ai-privacy': {
+    slug: 'ai-privacy',
+    title: 'AI Privacy & Code Protection',
+    description: 'Deterministic offline execution, zero model training, and pre-transmission secret redaction.',
+    category: 'Trust, Compliance & Governance',
+    headings: [
+      { id: 'deterministic-scanning', title: 'Deterministic Offline Engine' },
+      { id: 'redaction-protocol', title: 'Pre-Transmission Redaction' },
+      { id: 'zero-training', title: 'Zero Model Training' },
+    ],
+    content: `
+## Deterministic Offline Engine
+
+SecretShield secret detection runs 100% locally in volatile memory using regex patterns, Shannon entropy analysis, and contextual heuristics. It requires zero cloud AI APIs.
+
+## Pre-Transmission Redaction
+
+When optional AI triage assistance is enabled, all source code strings are scrubbed of credentials and sensitive tokens before any API call is initiated.
+
+## Zero Model Training
+
+No customer source code or findings are ever used to train external artificial intelligence models.
+`,
+  },
+
+  'data-retention': {
+    slug: 'data-retention',
+    title: 'Data Retention & Cleanup',
+    description: 'Configurable resource lifecycles, point-in-time retention windows, and verified cleanup deletion.',
+    category: 'Trust, Compliance & Governance',
+    headings: [
+      { id: 'windows', title: 'Standard Retention Windows' },
+      { id: 'verification', title: 'Verified Deletion Engine' },
+    ],
+    content: `
+## Standard Retention Windows
+
+- Scans & Diffs: 90 days
+- Findings & Fingerprints: 365 days
+- Control Evidence Snapshots: 365 days
+- Audit Logs: 365 days
+- Incident Records: 730 days
+- AI Assistant History: 30 days
+
+## Verified Deletion Engine
+
+SecretShield verifies that database records have been expunged before updating retention logs. Deletion claims are backed by automated job verification hashes.
+`,
+  },
+
+  'public-trust-center': {
+    slug: 'public-trust-center',
+    title: 'Public Trust Center Mode',
+    description: 'Customer-shareable trust portals with strict privacy isolation.',
+    category: 'Trust, Compliance & Governance',
+    headings: [
+      { id: 'publishing', title: 'Publishing Public Controls' },
+      { id: 'leakage-prevention', title: 'Strict Leakage Prevention' },
+    ],
+    content: `
+## Publishing Public Controls
+
+Organizations can publish a public trust portal at \`/trust/public/[org-slug]\` to share security posture with prospects and auditors.
+
+## Strict Leakage Prevention
+
+Public Trust Center endpoints are isolated by design:
+- Private findings and masked secrets are NEVER exposed.
+- Internal repository names are hidden by default.
+- Internal audit logs and member emails are excluded.
+- Only explicitly whitelisted public controls are rendered.
+`,
+  },
 };
+
