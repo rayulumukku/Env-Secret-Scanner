@@ -650,3 +650,211 @@ model RuleTestFixture {
   @@index([ruleId])
 }
 
+// ── AUTONOMOUS SECURITY OPERATIONS & CONTINUOUS PROTECTION ───────────────────
+
+model SecurityEvent {
+  id                    String    @id @default(cuid())
+  organizationId        String
+  projectId             String?
+  repositoryId          String?
+  eventType             String    // SECRET_DETECTED | SECRET_REINTRODUCED | SECRET_REMOVED | EXPOSURE_EXTENDED | POLICY_VIOLATION | SCAN_COMPLETED | SCAN_FAILED | RULE_PACK_UPDATED | REMEDIATION_STARTED | REMEDIATION_VERIFIED | INTEGRATION_FAILURE | BASELINE_CHANGED
+  source                String    // GITHUB_PUSH | GITHUB_PR | GITLAB_PUSH | GITLAB_MR | SCHEDULED_SCAN | CLI_SCAN | CI_SCAN | MANUAL_SCAN | REPO_CONNECT | RULE_PACK_UPDATE
+  actor                 String?
+  severity              String?   // CRITICAL | HIGH | MEDIUM | LOW | INFO
+  category              String?
+  correlationId         String?
+  relatedFindingIdsJson String?   // JSON array of finding IDs
+  relatedFingerprintsJson String? // JSON array of masked fingerprints
+  evidenceIdsJson       String?   // JSON array of evidence IDs
+  metadataJson          String?   // Structured event context
+  timestamp             DateTime  @default(now())
+
+  @@index([organizationId])
+  @@index([repositoryId])
+  @@index([eventType])
+  @@index([correlationId])
+  @@index([timestamp])
+}
+
+model EventProcessing {
+  id             String    @id @default(cuid())
+  idempotencyKey String    @unique // provider + eventId + repositoryId
+  organizationId String
+  eventId        String
+  provider       String
+  repositoryId   String?
+  status         String    @default("COMPLETED") // QUEUED | PROCESSING | COMPLETED | FAILED | CANCELLED
+  retryCount     Int       @default(0)
+  lastError      String?
+  processedAt    DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model Playbook {
+  id               String            @id @default(cuid())
+  organizationId   String
+  name             String
+  description      String?
+  isEnabled        Boolean           @default(true)
+  version          String            @default("1.0.0")
+  conditionsJson   String            // Declarative JSON array of rule conditions
+  actionsJson      String            // Declarative JSON array of actions
+  approvalRequired Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  versions         PlaybookVersion[]
+  executions       PlaybookExecution[]
+
+  @@index([organizationId])
+  @@index([isEnabled])
+}
+
+model PlaybookVersion {
+  id             String    @id @default(cuid())
+  playbookId     String
+  version        String
+  conditionsJson String
+  actionsJson    String
+  changelog      String?
+  createdAt      DateTime  @default(now())
+
+  playbook       Playbook  @relation(fields: [playbookId], references: [id], onDelete: Cascade)
+
+  @@unique([playbookId, version])
+  @@index([playbookId])
+}
+
+model PlaybookExecution {
+  id                   String    @id @default(cuid())
+  organizationId       String
+  playbookId           String
+  playbookVersion      String
+  triggeringEventId    String
+  status               String    @default("EXECUTED") // EVALUATING | MATCHED | NO_MATCH | PENDING_APPROVAL | EXECUTED | FAILED
+  matchedConditionsJson String?
+  actionsResultJson    String?
+  error                String?
+  executedAt           DateTime  @default(now())
+  createdAt            DateTime  @default(now())
+
+  playbook             Playbook  @relation(fields: [playbookId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([playbookId])
+  @@index([triggeringEventId])
+}
+
+model ApprovalRequest {
+  id             String    @id @default(cuid())
+  organizationId String
+  actionType     String    // BLOCK_CI | NOTIFY_ESCALATION | POLICY_ACTIVATION | PLAYBOOK_ACTIVATION
+  targetId       String
+  reason         String
+  requestedBy    String?
+  status         String    @default("PENDING_APPROVAL") // PENDING_APPROVAL | APPROVED | REJECTED | EXECUTED | FAILED | EXPIRED
+  approver       String?
+  comment        String?
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model AutomationAction {
+  id                String    @id @default(cuid())
+  organizationId    String
+  policyId          String?
+  playbookId        String?
+  triggeringEventId String?
+  actionType        String    // CREATE_FINDING | CREATE_EXPOSURE_CLUSTER | NOTIFY_SECURITY | NOTIFY_REPO_OWNER | CREATE_REMEDIATION_TASK | BLOCK_CI | FAIL_PR_CHECK | CREATE_AUDIT_EVENT | REQUEST_MANUAL_REVIEW
+  status            String    @default("EXECUTED") // PENDING_APPROVAL | RUNNING | EXECUTED | FAILED | CANCELLED
+  targetResource    String?
+  resultJson        String?
+  error             String?
+  executedAt        DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+
+  @@index([organizationId])
+  @@index([triggeringEventId])
+  @@index([status])
+}
+
+model SecurityIncident {
+  id                      String          @id @default(cuid())
+  organizationId          String
+  title                   String
+  status                  String          @default("OPEN") // OPEN | INVESTIGATING | REMEDIATION | VERIFYING | CLOSED
+  severity                String          @default("HIGH") // CRITICAL | HIGH | MEDIUM | LOW
+  assignedToId            String?
+  relatedFingerprintsJson String?         // JSON array of masked fingerprints
+  relatedFindingIdsJson   String?         // JSON array of finding IDs
+  clustersCount           Int             @default(1)
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+  resolvedAt              DateTime?
+
+  events                  IncidentEvent[]
+  notes                   IncidentNote[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([severity])
+}
+
+model IncidentEvent {
+  id         String           @id @default(cuid())
+  incidentId String
+  eventId    String
+  eventType  String
+  summary    String
+  timestamp  DateTime         @default(now())
+
+  incident   SecurityIncident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
+}
+
+model IncidentNote {
+  id             String           @id @default(cuid())
+  incidentId     String
+  organizationId String
+  authorId       String
+  authorName     String
+  content        String           // Sanitized and masked notes
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  incident       SecurityIncident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
+  @@index([organizationId])
+}
+
+model ScheduledScan {
+  id             String    @id @default(cuid())
+  organizationId String
+  repositoryId   String
+  schedule       String    @default("daily") // hourly | daily | weekly | custom
+  cronExpression String?
+  isEnabled      Boolean   @default(true)
+  status         String    @default("COMPLETED") // QUEUED | RUNNING | COMPLETED | FAILED | CANCELLED | TIMEOUT
+  lastRunAt      DateTime?
+  nextRunAt      DateTime?
+  lastScanId     String?
+  retryCount     Int       @default(0)
+  lastError      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([organizationId])
+  @@index([repositoryId])
+  @@index([isEnabled])
+  @@index([nextRunAt])
+}
+

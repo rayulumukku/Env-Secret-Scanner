@@ -251,7 +251,33 @@ program
     process.exit(exitCode);
   });
 
+// ── WATCH COMMAND ─────────────────────────────────────────────────────────────
+program
+  .command('watch [path]')
+  .description('Continuously monitor directory for secret introductions')
+  .option('--staged', 'Watch only Git staged files')
+  .option('--ci', 'CI watch mode — exits with non-zero code on blocking findings')
+  .option('--debounce <ms>', 'Debounce interval in milliseconds', '300')
+  .option('--json', 'Output findings as JSON stream')
+  .action(async (targetPath, opts) => {
+    const { watchCommand } = await import('../lib/commands/watch.js');
+    const exitCode = await watchCommand(targetPath || '.', opts);
+    process.exit(exitCode);
+  });
+
+// ── DEV COMMAND ───────────────────────────────────────────────────────────────
+program
+  .command('dev [path]')
+  .description('Start local developer continuous protection console')
+  .option('--json', 'Output developer environment status as JSON')
+  .action(async (targetPath, opts) => {
+    const { devCommand } = await import('../lib/commands/watch.js');
+    const exitCode = await devCommand(targetPath || '.', opts);
+    process.exit(exitCode);
+  });
+
 program.parseAsync(process.argv).catch(err => {
   console.error('SecretShield error:', err.message);
   process.exit(2);
 });
+

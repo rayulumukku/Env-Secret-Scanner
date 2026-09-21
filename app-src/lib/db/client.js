@@ -66,6 +66,17 @@ class MemoryStore {
     this.evidenceRecords = new Map();
     this.fingerprintRelations = [];
     this.investigations = new Map();
+    this.securityEvents = new Map();
+    this.eventProcessings = new Map();
+    this.playbooks = new Map();
+    this.playbookVersions = new Map();
+    this.playbookExecutions = [];
+    this.approvalRequests = new Map();
+    this.automationActions = new Map();
+    this.securityIncidents = new Map();
+    this.incidentEvents = [];
+    this.incidentNotes = [];
+    this.scheduledScans = new Map();
   }
 }
 
