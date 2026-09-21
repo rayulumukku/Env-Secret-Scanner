@@ -276,8 +276,75 @@ program
     process.exit(exitCode);
   });
 
+// ── COPILOT COMMANDS ──────────────────────────────────────────────────────────
+program
+  .command('explain <target>')
+  .description('Explain a finding or file with evidence-backed intelligence')
+  .option('--json', 'Output explanation as JSON')
+  .action(async (target, opts) => {
+    const { explainCommand } = await import('../lib/commands/copilot.js');
+    const exitCode = await explainCommand(target, opts);
+    process.exit(exitCode);
+  });
+
+program
+  .command('why <target>')
+  .description('Diagnose why a secret finding matched and evaluate false-positive indicators')
+  .option('--json', 'Output diagnosis as JSON')
+  .action(async (target, opts) => {
+    const { whyCommand } = await import('../lib/commands/copilot.js');
+    const exitCode = await whyCommand(target, opts);
+    process.exit(exitCode);
+  });
+
+program
+  .command('fix <target>')
+  .description('Generate safe, deterministic quick-fix patches for a finding (defaults to dry-run)')
+  .option('--apply', 'Apply patch to disk (default is dry-run preview)')
+  .option('--dry-run', 'Simulate patch without disk modification (default)')
+  .option('--json', 'Output fix result as JSON')
+  .action(async (target, opts) => {
+    const { fixCommand } = await import('../lib/commands/copilot.js');
+    const exitCode = await fixCommand(target, opts);
+    process.exit(exitCode);
+  });
+
+program
+  .command('review [target]')
+  .description('Run security review on Git target (HEAD, branch, diff)')
+  .option('--json', 'Output review as JSON')
+  .action(async (target, opts) => {
+    const { reviewCommand } = await import('../lib/commands/copilot.js');
+    const exitCode = await reviewCommand(target || 'HEAD', opts);
+    process.exit(exitCode);
+  });
+
+program
+  .command('explain-commit <commit>')
+  .description('Explain security changes, findings delta, and remediation impact in a commit')
+  .option('--json', 'Output commit analysis as JSON')
+  .action(async (commit, opts) => {
+    const { explainCommitCommand } = await import('../lib/commands/copilot.js');
+    const exitCode = await explainCommitCommand(commit, opts);
+    process.exit(exitCode);
+  });
+
+program
+  .command('copilot')
+  .description('Query SecretShield Developer Security Copilot')
+  .option('--local', 'Run in 100% offline local deterministic mode (default)')
+  .option('--ai', 'Run in advisory AI mode with redacted and minimized prompts')
+  .option('--query <text>', 'Question or request for Copilot')
+  .option('--json', 'Output response as JSON')
+  .action(async (opts) => {
+    const { copilotCommand } = await import('../lib/commands/copilot.js');
+    const exitCode = await copilotCommand(opts);
+    process.exit(exitCode);
+  });
+
 program.parseAsync(process.argv).catch(err => {
   console.error('SecretShield error:', err.message);
   process.exit(2);
 });
+
 

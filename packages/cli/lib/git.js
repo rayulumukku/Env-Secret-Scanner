@@ -169,3 +169,36 @@ export function getPrContext() {
     workspace: process.env.GITHUB_WORKSPACE  || null,
   };
 }
+
+/**
+ * Get unified git diff string safely.
+ *
+ * @param {string} [target='HEAD'] - e.g. '--staged', 'HEAD~1..HEAD', 'origin/main...HEAD'
+ * @param {string} [cwd=process.cwd()]
+ * @returns {string}
+ */
+export function getGitDiff(target = 'HEAD', cwd = process.cwd()) {
+  const gitRoot = getGitRoot(cwd);
+  if (!gitRoot) return '';
+
+  const safeArg = /^[a-zA-Z0-9_./\-~^]+$/;
+  if (!safeArg.test(target) && target !== '--staged') return '';
+
+  try {
+    const args = target === '--staged'
+      ? ['diff', '--cached', '-U3']
+      : ['diff', target, '-U3'];
+
+    const diff = execFileSync('git', args, {
+      cwd: gitRoot,
+      stdio: 'pipe',
+      encoding: 'utf8',
+      timeout: 30_000,
+      maxBuffer: 10 * 1024 * 1024
+    });
+    return diff || '';
+  } catch {
+    return '';
+  }
+}
+

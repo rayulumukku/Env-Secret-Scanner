@@ -26,26 +26,36 @@ const HOOK_MARKER = '# installed-by: secretshield';
 const HOOK_SCRIPT = `#!/usr/bin/env sh
 # SecretShield pre-commit hook
 # ${HOOK_MARKER}
-# This hook scans staged files for exposed secrets.
+# This hook scans staged files for exposed secrets before commit.
 # To bypass: git commit --no-verify (not recommended)
 #
 # Uninstall: rm .git/hooks/pre-commit
 #            or: secretshield install-hook --remove
 
 # Check if secretshield is available
-if ! command -v secretshield >/dev/null 2>&1; then
-  # Try npx fallback
-  if command -v npx >/dev/null 2>&1; then
-    npx secretshield scan --staged --fail-on high
-    exit $?
-  fi
-  echo "SecretShield: secretshield not found. Skipping pre-commit scan."
-  echo "Install with: npm install -g @secretshield/cli"
+if command -v secretshield >/dev/null 2>&1; then
+  CMD="secretshield"
+elif command -v npx >/dev/null 2>&1; then
+  CMD="npx secretshield"
+else
+  echo "SecretShield: scanner not found. Skipping pre-commit scan."
   exit 0
 fi
 
-secretshield scan --staged --fail-on high
-exit $?
+# Run scan on staged files
+$CMD scan --staged --fail-on high
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -ne 0 ]; then
+  echo ""
+  echo "🛑 SecretShield blocked commit due to detected secrets in staged files."
+  echo "💡 Run 'secretshield fix <file>' to preview and apply safe environment variable extraction."
+  echo "🔍 Run 'secretshield explain <ruleId>' to inspect evidence and rotation steps."
+  echo ""
+  exit $EXIT_CODE
+fi
+
+exit 0
 `;
 
 // ── MAIN ──────────────────────────────────────────────────────────────────────

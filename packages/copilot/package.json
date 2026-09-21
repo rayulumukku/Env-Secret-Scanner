@@ -1,0 +1,19 @@
+{
+  "name": "@secretshield/copilot",
+  "version": "1.0.0",
+  "description": "Developer Security Copilot & IDE Intelligence Layer for SecretShield",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  },
+  "keywords": [
+    "secret-detection",
+    "copilot",
+    "security-assistant",
+    "remediation",
+    "developer-tooling"
+  ],
+  "author": "SecretShield Team",
+  "license": "Apache-2.0"
+}
