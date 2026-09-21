@@ -1,0 +1,25 @@
+{
+  "category": "Source Control",
+  "fixtures": [
+    {
+      "ruleId": "github-pat",
+      "positive": [
+        "GITHUB_TOKEN=ghp_111122223333444455556666777788889999",
+        "PAT=github_pat_11AAAAAAA0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+      ],
+      "negative": [
+        "GITHUB_TOKEN=ghp_dummy",
+        "PAT=dummy_pat"
+      ]
+    },
+    {
+      "ruleId": "gitlab-pat",
+      "positive": [
+        "GITLAB_TOKEN=glpat-1234567890abcdefghij"
+      ],
+      "negative": [
+        "GITLAB_TOKEN=glpat-short"
+      ]
+    }
+  ]
+}

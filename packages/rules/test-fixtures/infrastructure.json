@@ -1,0 +1,25 @@
+{
+  "category": "Infrastructure",
+  "fixtures": [
+    {
+      "ruleId": "vault-token",
+      "positive": [
+        "VAULT_TOKEN=hvs.111122223333444455556666",
+        "export VAULT_TOKEN=s.abcdefghijklmnopqrstuvwx"
+      ],
+      "negative": [
+        "VAULT_TOKEN=hvs.short",
+        "VAULT_HOST=https://vault.internal"
+      ]
+    },
+    {
+      "ruleId": "terraform-cloud-token",
+      "positive": [
+        "TF_TOKEN=atlasv1.111122223333444455556666777788889999000011112222333344445555666677778888"
+      ],
+      "negative": [
+        "TF_TOKEN=dummy_token"
+      ]
+    }
+  ]
+}

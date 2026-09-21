@@ -1,0 +1,16 @@
+{
+  "category": "Payments",
+  "fixtures": [
+    {
+      "ruleId": "stripe-secret-key",
+      "positive": [
+        "STRIPE_SECRET_KEY=sk_test_00000000000000000000000000000000",
+        "STRIPE_RESTRICTED_KEY=rk_test_00000000000000000000000000000000"
+      ],
+      "negative": [
+        "STRIPE_SECRET_KEY=sk_test_short",
+        "STRIPE_KEY=pk_test_00000000000000000000000000000000"
+      ]
+    }
+  ]
+}

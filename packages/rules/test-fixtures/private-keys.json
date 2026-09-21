@@ -1,0 +1,23 @@
+{
+  "category": "Private Keys",
+  "fixtures": [
+    {
+      "ruleId": "rsa-private-key",
+      "positive": [
+        "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA0123456789abcdefghijklmnopqrstuvwxyz0123456789ab\n-----END RSA PRIVATE KEY-----"
+      ],
+      "negative": [
+        "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0123456789abcdefghij\n-----END PUBLIC KEY-----"
+      ]
+    },
+    {
+      "ruleId": "openssh-private-key",
+      "positive": [
+        "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABlwAAAAdzc2gtcn\n-----END OPENSSH PRIVATE KEY-----"
+      ],
+      "negative": [
+        "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC0123456789 user@host"
+      ]
+    }
+  ]
+}

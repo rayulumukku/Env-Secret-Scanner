@@ -1,0 +1,25 @@
+{
+  "category": "CI/CD",
+  "fixtures": [
+    {
+      "ruleId": "github-actions-secret",
+      "positive": [
+        "env:\n  GH_TOKEN: 'ghp_111122223333444455556666777788889999'",
+        "DEPLOY_KEY: 'ghp_AABBCCDDEEFFGGHHIIJJKKLLMMNNOOPPQQRR'"
+      ],
+      "negative": [
+        "env:\n  GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'",
+        "DEPLOY_KEY: '${{ secrets.DEPLOY_KEY }}'"
+      ]
+    },
+    {
+      "ruleId": "circleci-token",
+      "positive": [
+        "CIRCLE_TOKEN=CCIPAT_1111222233334444555566667777888899990000"
+      ],
+      "negative": [
+        "CIRCLE_TOKEN=short"
+      ]
+    }
+  ]
+}

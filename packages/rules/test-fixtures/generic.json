@@ -1,0 +1,28 @@
+{
+  "category": "Generic Secrets",
+  "fixtures": [
+    {
+      "ruleId": "generic-api-key",
+      "positive": [
+        "api_key = \"abcdef1234567890abcdef1234567890\"",
+        "API_SECRET='11112222333344445555666677778888'"
+      ],
+      "negative": [
+        "api_key = \"your_api_key_here\"",
+        "api_key = \"TODO_FILL_IN\""
+      ]
+    },
+    {
+      "ruleId": "generic-password",
+      "positive": [
+        "password = \"MyStr0ngP@ssw0rd!123\"",
+        "DB_PASS='ComplexSecretPass#2026!'"
+      ],
+      "negative": [
+        "password = \"password\"",
+        "password = \"changeme\"",
+        "password = \"123456\""
+      ]
+    }
+  ]
+}

@@ -76,6 +76,7 @@ model Organization {
   webhooks     Webhook[]
   connections  ProviderConnection[]
   customRules  CustomRule[]
+  rulePacks    RulePack[]
   baselines    Baseline[]
   allowlists   AllowlistEntry[]
   notifications Notification[]
@@ -220,6 +221,9 @@ model Finding {
   repositoryId   String
   fingerprint    String
   ruleId         String
+  ruleVersion    String?         @default("1.0.0")
+  rulePackVersion String?        @default("1.0.0")
+  scannerVersion String?         @default("2.0.0")
   type           String
   category       String
   severity       FindingSeverity
@@ -534,3 +538,115 @@ model Investigation {
   @@index([fingerprint])
   @@index([status])
 }
+
+// ── RULE PACKS & COMMUNITY DETECTION ECOSYSTEM ───────────────────────────────
+
+model RulePack {
+  id                    String            @id @default(cuid())
+  name                  String
+  version               String            @default("1.0.0")
+  description           String?
+  author                String            @default("SecretShield Community")
+  license               String            @default("Apache-2.0")
+  organizationId        String?
+  isPublic              Boolean           @default(false)
+  isBuiltin             Boolean           @default(false)
+  isEnabled             Boolean           @default(true)
+  minimumScannerVersion String            @default("1.0.0")
+  integrity             String?           // Canonical SHA-256 integrity hash
+  signatureJson         String?           // Cryptographic signature payload
+  rulesJson             String            // Declarative JSON array of rules
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  organization          Organization?     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  versions              RulePackVersion[]
+  submissions           RuleSubmission[]
+  testFixtures          RuleTestFixture[]
+
+  @@index([organizationId])
+  @@index([isPublic])
+  @@index([isEnabled])
+}
+
+model RulePackVersion {
+  id                    String    @id @default(cuid())
+  rulePackId            String
+  version               String
+  changelog             String?
+  rulesJson             String
+  integrity             String
+  minimumScannerVersion String    @default("1.0.0")
+  createdAt             DateTime  @default(now())
+
+  rulePack              RulePack  @relation(fields: [rulePackId], references: [id], onDelete: Cascade)
+
+  @@unique([rulePackId, version])
+  @@index([rulePackId])
+}
+
+enum SubmissionStatus {
+  DRAFT
+  VALIDATING
+  AUTOMATED_TESTS_PASSED
+  UNDER_REVIEW
+  APPROVED
+  PUBLISHED
+  REJECTED
+  DEPRECATED
+}
+
+model RuleSubmission {
+  id             String           @id @default(cuid())
+  rulePackId     String?
+  name           String
+  description    String?
+  author         String
+  authorEmail    String?
+  license        String           @default("MIT")
+  status         SubmissionStatus @default(UNDER_REVIEW)
+  rulesJson      String           // Declarative rules array in JSON
+  notes          String?
+  submittedAt    DateTime         @default(now())
+  reviewedAt     DateTime?
+  reviewer       String?
+  reviewComments String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  rulePack       RulePack?        @relation(fields: [rulePackId], references: [id], onDelete: SetNull)
+  reviews        RuleReview[]
+
+  @@index([status])
+  @@index([rulePackId])
+}
+
+model RuleReview {
+  id               String         @id @default(cuid())
+  submissionId     String
+  reviewerName     String
+  verdict          String         // APPROVED | REJECTED | CHANGES_REQUESTED
+  feedback         String?
+  testSummaryJson  String?        // Automated fixture benchmark results
+  createdAt        DateTime       @default(now())
+
+  submission       RuleSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId])
+}
+
+model RuleTestFixture {
+  id                   String    @id @default(cuid())
+  rulePackId           String?
+  ruleId               String
+  positiveFixturesJson String    // JSON array of synthetic positive fixture strings
+  negativeFixturesJson String    // JSON array of synthetic negative fixture strings
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  rulePack             RulePack? @relation(fields: [rulePackId], references: [id], onDelete: Cascade)
+
+  @@index([rulePackId])
+  @@index([ruleId])
+}
+

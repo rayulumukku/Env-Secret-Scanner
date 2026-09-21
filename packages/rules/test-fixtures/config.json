@@ -1,0 +1,18 @@
+{
+  "category": "Configuration Secrets",
+  "fixtures": [
+    {
+      "ruleId": "dotenv-credential-variable",
+      "positive": [
+        "APP_KEY=base64:9876543210abcdefghijklmnopqrstuvwxyz",
+        "PROD_SECRET=11112222333344445555666677778888",
+        "AUTH_SECRET=99998888777766665555444433332222"
+      ],
+      "negative": [
+        "APP_KEY=placeholder",
+        "APP_ENV=production",
+        "PORT=3000"
+      ]
+    }
+  ]
+}

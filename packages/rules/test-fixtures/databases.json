@@ -1,0 +1,34 @@
+{
+  "category": "Databases",
+  "fixtures": [
+    {
+      "ruleId": "postgres-connection-url",
+      "positive": [
+        "DATABASE_URL=postgres://app_user:SuperSecretPass123@db.prod.internal:5432/appdb",
+        "POSTGRES_URL=postgresql://admin:Pass_12345678@pg.internal:5432/main"
+      ],
+      "negative": [
+        "DATABASE_URL=postgres://localhost:5432/testdb",
+        "DATABASE_URL=sqlite:///tmp/db.sqlite"
+      ]
+    },
+    {
+      "ruleId": "mongodb-connection-url",
+      "positive": [
+        "MONGO_URI=mongodb+srv://clusteruser:MySecretPassword123@cluster0.abcde.mongodb.net/test"
+      ],
+      "negative": [
+        "MONGO_URI=mongodb://localhost:27017/local"
+      ]
+    },
+    {
+      "ruleId": "redis-connection-url",
+      "positive": [
+        "REDIS_URL=redis://:SecretRedisAuthToken123@redis-master:6379/0"
+      ],
+      "negative": [
+        "REDIS_URL=redis://localhost:6379"
+      ]
+    }
+  ]
+}

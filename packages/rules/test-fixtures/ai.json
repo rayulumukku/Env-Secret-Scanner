@@ -1,0 +1,36 @@
+{
+  "category": "AI",
+  "fixtures": [
+    {
+      "ruleId": "openai-api-key",
+      "positive": [
+        "OPENAI_API_KEY=sk-proj-abc1234567890defghijklmnopqrstuvwx",
+        "const key = 'sk-live1234567890abcdefghijklmnopqrst';"
+      ],
+      "negative": [
+        "OPENAI_API_KEY=sk-placeholder-mock",
+        "const key = 'sk-test';"
+      ]
+    },
+    {
+      "ruleId": "anthropic-api-key",
+      "positive": [
+        "ANTHROPIC_API_KEY=sk-ant-api03-abcdef1234567890abcdef1234567890abcdef12",
+        "const antKey = 'sk-ant-admin01-1111222233334444555566667777888899990000';"
+      ],
+      "negative": [
+        "ANTHROPIC_API_KEY=sk-ant-mock-key",
+        "ANTHROPIC_KEY=placeholder"
+      ]
+    },
+    {
+      "ruleId": "huggingface-token",
+      "positive": [
+        "HF_TOKEN=hf_1111222233334444555566667777888899"
+      ],
+      "negative": [
+        "HF_TOKEN=hf_short"
+      ]
+    }
+  ]
+}

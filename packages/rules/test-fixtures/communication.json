@@ -1,0 +1,34 @@
+{
+  "category": "Communication",
+  "fixtures": [
+    {
+      "ruleId": "slack-token",
+      "positive": [
+        "SLACK_BOT_TOKEN=xapp-00000000000-00000000000-000000000000000000000000",
+        "SLACK_USER_TOKEN=xapp-11111111111-11111111111-111111111111111111111111"
+      ],
+      "negative": [
+        "SLACK_TOKEN=xapp-dummy",
+        "SLACK_APP=xapp-short"
+      ]
+    },
+    {
+      "ruleId": "slack-webhook-url",
+      "positive": [
+        "SLACK_WEBHOOK=https://example.com/services/hooks/slack/T00000000/B00000000/000000000000000000000000"
+      ],
+      "negative": [
+        "SLACK_URL=https://api.slack.com/methods"
+      ]
+    },
+    {
+      "ruleId": "twilio-api-key",
+      "positive": [
+        "TWILIO_API_KEY=SK00000000000000000000000000000000"
+      ],
+      "negative": [
+        "TWILIO_KEY=SKdummy"
+      ]
+    }
+  ]
+}

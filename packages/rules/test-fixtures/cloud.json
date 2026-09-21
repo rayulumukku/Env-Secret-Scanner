@@ -1,0 +1,49 @@
+{
+  "category": "Cloud",
+  "fixtures": [
+    {
+      "ruleId": "aws-access-key-id",
+      "positive": [
+        "AWS_ACCESS_KEY_ID=AKIAEXAMPLEKEY123456",
+        "const key = 'ASIA1234567890ABCDEF';",
+        "\"access_key\": \"AGPA1122334455667788\""
+      ],
+      "negative": [
+        "AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE",
+        "const dummy = 'NOT_AN_AWS_KEY';",
+        "AWS_KEY=AKIAshort"
+      ]
+    },
+    {
+      "ruleId": "aws-secret-access-key",
+      "positive": [
+        "aws_secret_access_key = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'",
+        "AWS_SECRET_KEY: \"abcdefghijklmnopqrstuvwxyz0123456789/+=a\""
+      ],
+      "negative": [
+        "aws_secret_access_key = 'CHANGEME_OR_USE_ENV_VAR'",
+        "aws_secret_access_key = 'short'"
+      ]
+    },
+    {
+      "ruleId": "google-api-key",
+      "positive": [
+        "const gkey = 'AIzaSyA1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q';",
+        "GOOGLE_API_KEY=AIzaSyB1234567890abcdefghijklmnopqrstuvw"
+      ],
+      "negative": [
+        "const gkey = 'AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';",
+        "const gkey = 'AIzashort';"
+      ]
+    },
+    {
+      "ruleId": "azure-storage-account-key",
+      "positive": [
+        "DefaultEndpointsProtocol=https;AccountName=myacc;AccountKey=AbCdEfGhIjKlMnOpQrStUvWxYz0123456789+AbCdEfGhIjKlMnOpQrStUvWxYz0123456789+AbCdEfGhIj==;EndpointSuffix=core.windows.net"
+      ],
+      "negative": [
+        "DefaultEndpointsProtocol=https;AccountName=dev;AccountKey=dummy_dev_key;"
+      ]
+    }
+  ]
+}
