@@ -24,6 +24,11 @@ export const NODE_TYPES = {
   RULE: 'RULE',
   INTEGRATION: 'INTEGRATION',
   REMEDIATION: 'REMEDIATION',
+  DEPLOYMENT: 'DEPLOYMENT',
+  ENVIRONMENT: 'ENVIRONMENT',
+  APPLICATION: 'APPLICATION',
+  CLOUD_ACCOUNT: 'CLOUD_ACCOUNT',
+  CLOUD_RESOURCE: 'CLOUD_RESOURCE',
 };
 
 export const RELATIONSHIP_TYPES = {
@@ -36,9 +41,15 @@ export const RELATIONSHIP_TYPES = {
   MATCHES_RULE: 'MATCHES_RULE',
   CONNECTS_INTEGRATION: 'CONNECTS_INTEGRATION',
   APPLIES_REMEDIATION: 'APPLIES_REMEDIATION',
+  EXECUTES_DEPLOYMENT: 'EXECUTES_DEPLOYMENT',
+  DEPLOYED_TO_ENVIRONMENT: 'DEPLOYED_TO_ENVIRONMENT',
+  HOSTS_APPLICATION: 'HOSTS_APPLICATION',
+  PROVISIONS_RESOURCE: 'PROVISIONS_RESOURCE',
+  ASSOCIATED_WITH_RESOURCE: 'ASSOCIATED_WITH_RESOURCE',
+  MANAGES_ACCOUNT: 'MANAGES_ACCOUNT',
 };
 
-const DEFAULT_MAX_DEPTH = 4;
+const DEFAULT_MAX_DEPTH = 6;
 const DEFAULT_MAX_NODES = 150;
 
 /**
@@ -209,6 +220,85 @@ export function generateExposureGraph({
           data: { status: f.status, guide: f.remediation },
         });
         addEdge(edgesMap, findingNodeId, remNodeId, RELATIONSHIP_TYPES.APPLIES_REMEDIATION, `ev_rem_${findingId}`, 'Security Remediation Action');
+      }
+    }
+
+    // Depth 5: Deployment & Environment Nodes (if commit was deployed)
+    const deployments = f.deployments || context.deployments || [];
+    const matchingDeployments = commitHash
+      ? deployments.filter(d => d.commitSha === commitHash || d.commitSha?.startsWith(commitHash))
+      : [];
+
+    for (const dep of matchingDeployments) {
+      if (nodesMap.size >= maxNodes) break;
+      const depNodeId = `dep_${dep.id}`;
+      const commitNodeId = commitHash ? `commit_${commitHash.slice(0, 10)}` : null;
+
+      if (!nodesMap.has(depNodeId) && maxDepth >= 5) {
+        nodesMap.set(depNodeId, {
+          id: depNodeId,
+          type: NODE_TYPES.DEPLOYMENT,
+          label: `Deployment #${dep.id} (${dep.provider || 'CI'})`,
+          depth: 5,
+          data: { deploymentId: dep.id, provider: dep.provider, status: dep.status, commitSha: dep.commitSha },
+        });
+
+        if (commitNodeId && nodesMap.has(commitNodeId)) {
+          addEdge(edgesMap, commitNodeId, depNodeId, RELATIONSHIP_TYPES.EXECUTES_DEPLOYMENT, `ev_dep_${dep.id}`, `CI/CD Deployment Event #${dep.id}`);
+        }
+      }
+
+      // Depth 5/6: Environment Node
+      const envName = dep.environment || 'production';
+      const envNodeId = `env_${envName.toLowerCase()}`;
+      if (!nodesMap.has(envNodeId) && maxDepth >= 5 && nodesMap.size < maxNodes) {
+        nodesMap.set(envNodeId, {
+          id: envNodeId,
+          type: NODE_TYPES.ENVIRONMENT,
+          label: `Env: ${envName}`,
+          depth: 5,
+          data: { name: envName, isProduction: Boolean(dep.isProduction || envName.toLowerCase() === 'production') },
+        });
+      }
+
+      if (nodesMap.has(depNodeId) && nodesMap.has(envNodeId)) {
+        addEdge(edgesMap, depNodeId, envNodeId, RELATIONSHIP_TYPES.DEPLOYED_TO_ENVIRONMENT, `ev_dep_env_${dep.id}`, `Environment Target Mapping`);
+      }
+
+      // Depth 6: Application Node
+      const appName = f.application || context.application || dep.application || projName;
+      const appNodeId = `app_${appName.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+      if (!nodesMap.has(appNodeId) && maxDepth >= 6 && nodesMap.size < maxNodes) {
+        nodesMap.set(appNodeId, {
+          id: appNodeId,
+          type: NODE_TYPES.APPLICATION,
+          label: `App: ${appName}`,
+          depth: 6,
+          data: { name: appName, projectId: projId },
+        });
+      }
+      if (nodesMap.has(envNodeId) && nodesMap.has(appNodeId)) {
+        addEdge(edgesMap, envNodeId, appNodeId, RELATIONSHIP_TYPES.HOSTS_APPLICATION, `ev_env_app_${appNodeId}`, `Application Runtime Service`);
+      }
+    }
+
+    // Depth 6: Associated Cloud Resources
+    const cloudResources = f.cloudResources || context.cloudResources || [];
+    for (const res of cloudResources) {
+      if (nodesMap.size >= maxNodes) break;
+      const resNodeId = `cres_${res.resourceId || res.id}`;
+      if (!nodesMap.has(resNodeId) && maxDepth >= 6) {
+        nodesMap.set(resNodeId, {
+          id: resNodeId,
+          type: NODE_TYPES.CLOUD_RESOURCE,
+          label: `[${res.provider || 'cloud'}] ${res.resourceType}: ${res.resourceId}`,
+          depth: 6,
+          data: { resourceId: res.resourceId, resourceType: res.resourceType, provider: res.provider },
+        });
+
+        // Link finding or application to cloud resource
+        const sourceForResource = nodesMap.has(findingNodeId) ? findingNodeId : orgNodeId;
+        addEdge(edgesMap, sourceForResource, resNodeId, RELATIONSHIP_TYPES.ASSOCIATED_WITH_RESOURCE, `ev_cres_${res.resourceId}`, `Infrastructure Mapping`);
       }
     }
   }

@@ -342,6 +342,92 @@ program
     process.exit(exitCode);
   });
 
+// ── RUNTIME COMMANDS ──────────────────────────────────────────────────────────
+const runtime = program
+  .command('runtime [action]')
+  .description('Inspect runtime asset models and deployment correlations')
+  .option('--organization <org>', 'Target organization ID')
+  .option('--repository <repo>', 'Filter by repository')
+  .option('--environment <env>', 'Filter by environment')
+  .option('--json', 'Output results as JSON')
+  .option('--quiet', 'Suppress informational output')
+  .option('--no-color', 'Disable colored terminal output')
+  .action(async (action, opts) => {
+    const { runtimeCommand } = await import('../lib/commands/runtime.js');
+    const exitCode = await runtimeCommand(action, opts);
+    process.exit(exitCode);
+  });
+
+runtime
+  .command('deployments')
+  .description('List deployment inventory and commit associations')
+  .option('--organization <org>', 'Target organization ID')
+  .option('--repository <repo>', 'Filter by repository')
+  .option('--environment <env>', 'Filter by environment')
+  .option('--json', 'Output results as JSON')
+  .option('--quiet', 'Suppress informational output')
+  .option('--no-color', 'Disable colored terminal output')
+  .action(async (opts) => {
+    const { runtimeCommand } = await import('../lib/commands/runtime.js');
+    const exitCode = await runtimeCommand('deployments', opts);
+    process.exit(exitCode);
+  });
+
+runtime
+  .command('exposure')
+  .description('Correlate source findings with active runtime and deployment environments')
+  .option('--organization <org>', 'Target organization ID')
+  .option('--json', 'Output results as JSON')
+  .option('--quiet', 'Suppress informational output')
+  .option('--no-color', 'Disable colored terminal output')
+  .action(async (opts) => {
+    const { runtimeCommand } = await import('../lib/commands/runtime.js');
+    const exitCode = await runtimeCommand('exposure', opts);
+    process.exit(exitCode);
+  });
+
+// ── CLOUD COMMANDS ────────────────────────────────────────────────────────────
+const cloud = program
+  .command('cloud [action]')
+  .description('Inspect connected cloud accounts, resource inventories, and posture')
+  .option('--organization <org>', 'Target organization ID')
+  .option('--json', 'Output results as JSON')
+  .option('--quiet', 'Suppress informational output')
+  .option('--no-color', 'Disable colored terminal output')
+  .action(async (action, opts) => {
+    const { cloudCommand } = await import('../lib/commands/cloud.js');
+    const exitCode = await cloudCommand(action, opts);
+    process.exit(exitCode);
+  });
+
+cloud
+  .command('resources')
+  .description('List synchronized cloud resources and configuration posture status')
+  .option('--organization <org>', 'Target organization ID')
+  .option('--provider <provider>', 'Filter by cloud provider (aws, gcp, azure, generic)')
+  .option('--type <type>', 'Filter by resource type')
+  .option('--json', 'Output results as JSON')
+  .option('--quiet', 'Suppress informational output')
+  .option('--no-color', 'Disable colored terminal output')
+  .action(async (opts) => {
+    const { cloudCommand } = await import('../lib/commands/cloud.js');
+    const exitCode = await cloudCommand('resources', opts);
+    process.exit(exitCode);
+  });
+
+cloud
+  .command('sync')
+  .description('Trigger read-only metadata synchronization for connected cloud accounts')
+  .option('--organization <org>', 'Target organization ID')
+  .option('--json', 'Output results as JSON')
+  .option('--quiet', 'Suppress informational output')
+  .option('--no-color', 'Disable colored terminal output')
+  .action(async (opts) => {
+    const { cloudCommand } = await import('../lib/commands/cloud.js');
+    const exitCode = await cloudCommand('sync', opts);
+    process.exit(exitCode);
+  });
+
 program.parseAsync(process.argv).catch(err => {
   console.error('SecretShield error:', err.message);
   process.exit(2);

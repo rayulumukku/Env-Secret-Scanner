@@ -87,18 +87,53 @@ export function createDiagnosticFromFinding(finding, document, vscodeApi) {
 }
 
 /**
+ * Formats concise runtime/deployment exposure chain for VS Code display.
+ * e.g. "Detected in source → Commit 9f31a23 → Deployed to staging → Production status unknown"
+ *
+ * @param {Finding} finding
+ * @returns {string} Concise chain string
+ */
+export function formatRuntimeExposureChain(finding = {}) {
+  const parts = [];
+  parts.push(finding.sourceStatus || 'Detected in source');
+
+  if (finding.commitHash) {
+    parts.push(`Commit ${finding.commitHash.slice(0, 7)}`);
+  }
+
+  if (finding.deployment) {
+    const depId = typeof finding.deployment === 'object' ? (finding.deployment.id || 'active') : finding.deployment;
+    parts.push(`Deployment #${depId}`);
+  } else if (finding.isDeployed) {
+    parts.push(`Deployed to ${finding.environment || 'staging'}`);
+  }
+
+  if (finding.environment) {
+    parts.push(`Environment: ${finding.environment}`);
+  } else if (finding.isProductionAssociated) {
+    parts.push('Production deployment confirmed');
+  } else {
+    parts.push('Production status unknown');
+  }
+
+  return parts.join(' → ');
+}
+
+/**
  * Creates Markdown content for VS Code Hover Provider.
  * @param {Finding} finding 
  * @returns {string} Markdown text
  */
 export function createHoverMarkdown(finding) {
   const sevEmoji = finding.severity === 'CRITICAL' ? '🔴' : finding.severity === 'HIGH' ? '🟠' : finding.severity === 'MEDIUM' ? '🟡' : '🔵';
+  const exposureChain = formatRuntimeExposureChain(finding);
   
   return [
     `### 🛡️ SecretShield: ${finding.ruleName || finding.ruleId}`,
     `**Severity:** ${sevEmoji} \`${finding.severity}\` &nbsp;|&nbsp; **Confidence:** \`${Math.round((finding.confidence || 1) * 100)}%\``,
     ``,
     `> **Masked Credential:** \`${finding.maskedValue}\``,
+    `> **Exposure Chain:** \`${exposureChain}\``,
     finding.entropy ? `> **Shannon Entropy:** \`${finding.entropy.toFixed(2)}\`` : '',
     ``,
     finding.description ? `**Description:** ${finding.description}` : '',

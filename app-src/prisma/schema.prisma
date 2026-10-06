@@ -1093,4 +1093,154 @@ model TrustSetting {
   @@index([organizationSlug])
 }
 
+// ── RUNTIME ASSET & DEPLOYMENT INTELLIGENCE ───────────────────────────────────
+
+model RuntimeAsset {
+  id             String    @id @default(cuid())
+  organizationId String
+  assetType      String    // APPLICATION | DEPLOYMENT | ENVIRONMENT | CLOUD_ACCOUNT | CLOUD_PROJECT | SERVICE | DATABASE | STORAGE | CI_CD | CONTAINER | SERVERLESS_FUNCTION | REPOSITORY
+  name           String
+  identifier     String    // Unique identifier/ARN/URI within provider or cluster
+  environment    String?   // DEVELOPMENT | TEST | STAGING | PRODUCTION | CUSTOM
+  repositoryId   String?
+  projectId      String?
+  metadataJson   String?   // Non-sensitive metadata ONLY (no credentials or tokens)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([organizationId])
+  @@index([assetType])
+  @@index([environment])
+  @@index([identifier])
+}
+
+model DeploymentEnvironment {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  environmentType String   @default("CUSTOM") // DEVELOPMENT | TEST | STAGING | PRODUCTION | CUSTOM
+  isProduction   Boolean   @default(false)
+  description    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@index([environmentType])
+}
+
+model Deployment {
+  id              String    @id @default(cuid())
+  organizationId  String
+  repositoryId    String
+  projectId       String?
+  environment     String    // DEVELOPMENT | TEST | STAGING | PRODUCTION | CUSTOM
+  commitSha       String
+  branch          String?
+  provider        String    // github_actions | gitlab_ci | vercel | aws_ecs | k8s | docker | custom
+  status          String    @default("SUCCESS") // SUCCESS | FAILED | IN_PROGRESS | ROLLED_BACK
+  actor           String?
+  buildIdentifier String?
+  metadataJson    String?   // Never contains source secrets
+  createdAt       DateTime  @default(now())
+  completedAt     DateTime?
+
+  @@index([organizationId])
+  @@index([repositoryId])
+  @@index([commitSha])
+  @@index([environment])
+  @@index([status])
+}
+
+model DeploymentEvent {
+  id           String    @id @default(cuid())
+  deploymentId String
+  eventType    String    // STARTED | SUCCEEDED | FAILED | ROLLED_BACK | POLICY_GATED
+  summary      String
+  metadataJson String?
+  timestamp    DateTime  @default(now())
+
+  @@index([deploymentId])
+  @@index([eventType])
+}
+
+model CloudAccount {
+  id                       String    @id @default(cuid())
+  organizationId           String
+  provider                 String    // aws | gcp | azure | generic
+  accountId                String    // External account/project ID
+  name                     String
+  status                   String    @default("CONNECTED") // CONNECTED | DISCONNECTED | ERROR | SYNCING
+  permissionsJson          String?   // JSON array of granted read-only scopes
+  encryptedCredentialsJson String?   // AES-256-GCM encrypted envelope; NEVER plaintext
+  lastSyncedAt             DateTime?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+
+  @@unique([organizationId, provider, accountId])
+  @@index([organizationId])
+  @@index([provider])
+}
+
+model CloudResource {
+  id             String    @id @default(cuid())
+  organizationId String
+  cloudAccountId String
+  provider       String    // aws | gcp | azure | generic
+  resourceType   String    // s3_bucket | iam_role | security_group | cloud_run | blob_container | etc.
+  resourceId     String
+  arnOrUri       String?
+  region         String?
+  environment    String?   // DEVELOPMENT | TEST | STAGING | PRODUCTION | CUSTOM
+  metadataJson   String?   // Pure non-sensitive configuration metadata
+  postureStatus  String    @default("SECURE") // SECURE | WARNING | DEFICIENT | UNKNOWN
+  lastSyncedAt   DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([organizationId])
+  @@index([cloudAccountId])
+  @@index([resourceType])
+  @@index([environment])
+}
+
+model CloudFinding {
+  id             String    @id @default(cuid())
+  organizationId String
+  cloudAccountId String
+  resourceId     String
+  category       String    @default("CLOUD_POSTURE") // Strictly separated from secret findings
+  severity       String    // CRITICAL | HIGH | MEDIUM | LOW
+  title          String
+  description    String
+  evidenceJson   String?
+  provider       String
+  remediationJson String?
+  policyRule     String?
+  status         String    @default("OPEN") // OPEN | RESOLVED | MUTED
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([organizationId])
+  @@index([category])
+  @@index([severity])
+  @@index([status])
+}
+
+model DeploymentGateDecision {
+  id                   String    @id @default(cuid())
+  organizationId       String
+  deploymentId         String?
+  commitSha            String
+  environment          String
+  decision             String    // ALLOW | BLOCK | REVIEW_REQUIRED | ERROR
+  reason               String
+  policyViolationsJson String?
+  evaluatedAt          DateTime  @default(now())
+
+  @@index([organizationId])
+  @@index([commitSha])
+  @@index([decision])
+}
+
 

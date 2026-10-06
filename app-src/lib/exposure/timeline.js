@@ -19,6 +19,7 @@ export const TIMELINE_EVENT_TYPES = {
   LATEST_EXPOSURE: 'LATEST_EXPOSURE',
   REMEDIATION_ACTION: 'REMEDIATION_ACTION',
   VERIFICATION_SCAN: 'VERIFICATION_SCAN',
+  DEPLOYMENT_EXPOSURE: 'DEPLOYMENT_EXPOSURE',
 };
 
 /**
@@ -30,6 +31,7 @@ export const TIMELINE_EVENT_TYPES = {
  * @param {object[]} [params.gitEvents=[]] - Git commit / diff history events
  * @param {object[]} [params.remediationEvents=[]] - Remediation status transitions
  * @param {object[]} [params.verificationScans=[]] - Post-remediation verification scans
+ * @param {object[]} [params.deploymentEvents=[]] - Deployments including this secret commit
  * @returns {object} Complete timeline with metrics and chronological events
  */
 export function generateExposureTimeline({
@@ -38,6 +40,7 @@ export function generateExposureTimeline({
   gitEvents = [],
   remediationEvents = [],
   verificationScans = [],
+  deploymentEvents = [],
 }) {
   const events = [];
   const seenRepositories = new Set();
@@ -248,6 +251,30 @@ export function generateExposureTimeline({
       }),
       severity: ver.isClean ? 'LOW' : 'HIGH',
       badge: ver.isClean ? 'Verified Clean' : 'Verification Alert',
+    });
+  }
+
+  // 4. Add Historical Deployment Events
+  for (const dep of deploymentEvents) {
+    const isProd = dep.environment?.toLowerCase() === 'production' || dep.isProduction === true;
+    events.push({
+      id: `evt_dep_${dep.id || Math.random().toString(36).slice(2, 8)}`,
+      type: TIMELINE_EVENT_TYPES.DEPLOYMENT_EXPOSURE,
+      timestamp: dep.deployedAt || dep.createdAt || dep.timestamp || new Date().toISOString(),
+      title: `Secret Included in Deployment (${dep.environment || 'staging'})`,
+      description: dep.summary || `Commit ${dep.commitSha?.slice(0, 8) || 'HEAD'} containing finding was deployed to ${dep.environment} (#${dep.id || 'dep'}).`,
+      repositoryId: dep.repositoryId,
+      branch: dep.branch,
+      commitHash: dep.commitSha,
+      environment: dep.environment,
+      evidence: createEvidence({
+        type: EVIDENCE_TYPES.DEPLOYMENT_EVENT,
+        sourceId: dep.id || dep.commitSha || 'deployment',
+        fingerprint,
+        summary: `Deployment to ${dep.environment} included commit ${dep.commitSha?.slice(0, 8) || 'HEAD'}`,
+      }),
+      severity: isProd ? 'CRITICAL' : 'HIGH',
+      badge: isProd ? 'Production Deployed' : 'Deployed',
     });
   }
 

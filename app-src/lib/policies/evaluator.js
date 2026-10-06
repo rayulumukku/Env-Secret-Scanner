@@ -74,6 +74,23 @@ export function extractFieldValue(field, context = {}) {
     case ConditionField.CI_STATUS:
       return repository.ciEnabled || repository.githubActions ? 'PROTECTED' : 'UNPROTECTED';
 
+    case ConditionField.ENVIRONMENT:
+      return context.environment || context.deployment?.environment || finding.environment || '';
+
+    case ConditionField.IS_PRODUCTION:
+      return Boolean(context.isProduction || context.deployment?.isProduction || finding.isProductionAssociated);
+
+    case ConditionField.CLOUD_RESOURCE_EXPOSED:
+      return Boolean(context.isCloudResourceExposed || context.cloudResource?.isPublic || finding.cloudResourceExposed);
+
+    case ConditionField.DEPLOYMENT_STATUS:
+      return context.deploymentStatus || context.deployment?.status || 'UNKNOWN';
+
+    case ConditionField.UNRESOLVED_HIGH_FINDINGS:
+      return Array.isArray(context.findings)
+        ? context.findings.filter(f => ['CRITICAL', 'HIGH'].includes(String(f.severity).toUpperCase()) && f.status !== 'REMEDIATED').length
+        : 0;
+
     default:
       return finding[field] ?? scan[field] ?? repository[field] ?? null;
   }

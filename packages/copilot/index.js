@@ -254,19 +254,113 @@ function handleLocalCopilotQuery(q, context, options = {}) {
     };
   }
 
+  // ── RUNTIME + CLOUD EXPOSURE INTELLIGENCE QUESTIONS ───────────────────────
+
+  // Case G: "Was this finding deployed?"
+  if (q.includes('was this finding deployed') || (q.includes('finding') && q.includes('deployed'))) {
+    const deployments = context.deployments || context.matchingDeployments || [];
+    const isDeployed = deployments.length > 0;
+    const envs = deployments.map(d => d.environment || 'unknown').join(', ');
+    return {
+      mode: 'local',
+      modeLabel: 'Local deterministic mode',
+      intent: 'FINDING_DEPLOYMENT_QUERY',
+      isDeployed,
+      deploymentsCount: deployments.length,
+      deployments,
+      answer: isDeployed
+        ? `Yes, this finding was present in ${deployments.length} deployment(s) affecting: ${envs}.`
+        : 'No deployment records indicate this finding was deployed. (Status: Source exposure only)',
+      evidence: deployments.map(d => `Deployment #${d.id} [${d.environment}] on commit ${d.commitSha || 'unknown'}`),
+    };
+  }
+
+  // Case H: "Which environments contained this commit?"
+  if (q.includes('which environments') || (q.includes('environments') && q.includes('commit'))) {
+    const envs = context.affectedEnvironments || context.environments || [];
+    const envNames = envs.map(e => typeof e === 'string' ? e : e.environmentName || e.name);
+    return {
+      mode: 'local',
+      modeLabel: 'Local deterministic mode',
+      intent: 'ENVIRONMENTS_FOR_COMMIT_QUERY',
+      environmentsCount: envNames.length,
+      environments: envNames,
+      answer: envNames.length > 0
+        ? `Commit was deployed to ${envNames.length} environment(s): ${envNames.join(', ')}.`
+        : 'Commit was not recorded in any deployment environments.',
+      evidence: envs,
+    };
+  }
+
+  // Case I: "Which production deployments contain unresolved findings?"
+  if (q.includes('production') && (q.includes('unresolved') || q.includes('contain') || q.includes('findings'))) {
+    const prodDeployments = (context.deployments || []).filter(d =>
+      d.isProduction === true || String(d.environment).toLowerCase() === 'production'
+    );
+    const affectedProd = prodDeployments.filter(d => (d.unresolvedFindingsCount || d.findingsCount || 0) > 0);
+    return {
+      mode: 'local',
+      modeLabel: 'Local deterministic mode',
+      intent: 'PRODUCTION_UNRESOLVED_FINDINGS_QUERY',
+      productionDeploymentsCount: affectedProd.length,
+      affectedDeployments: affectedProd,
+      answer: affectedProd.length > 0
+        ? `${affectedProd.length} production deployment(s) currently contain unresolved findings: ${affectedProd.map(d => `#${d.id} (${d.commitSha?.slice(0, 7) || 'HEAD'})`).join(', ')}.`
+        : 'Zero production deployments contain unresolved findings based on current authoritative metadata.',
+      evidence: affectedProd,
+    };
+  }
+
+  // Case J: "Which cloud resources are associated with this application?"
+  if (q.includes('cloud resources') || (q.includes('resources') && q.includes('application'))) {
+    const resources = context.cloudResources || context.associatedCloudResources || [];
+    return {
+      mode: 'local',
+      modeLabel: 'Local deterministic mode',
+      intent: 'APPLICATION_CLOUD_RESOURCES_QUERY',
+      resourcesCount: resources.length,
+      resources,
+      answer: resources.length > 0
+        ? `Application is associated with ${resources.length} cloud resource(s): ${resources.map(r => `${r.resourceType || 'resource'}:${r.resourceId || r.id}`).join(', ')}.`
+        : 'No cloud resources currently mapped to this application.',
+      evidence: resources,
+    };
+  }
+
+  // Case K: "Why is this resource considered exposed?"
+  if (q.includes('why') && (q.includes('resource') || q.includes('exposed'))) {
+    const postureFindings = context.postureFindings || context.findings || [];
+    const reasons = postureFindings.map(f => f.title || f.description || f.reason);
+    return {
+      mode: 'local',
+      modeLabel: 'Local deterministic mode',
+      intent: 'RESOURCE_EXPOSURE_REASON_QUERY',
+      isExposed: reasons.length > 0,
+      reasonsCount: reasons.length,
+      reasons,
+      answer: reasons.length > 0
+        ? `Resource considered exposed due to: ${reasons.join('; ')}.`
+        : 'Resource configuration currently satisfies all least-privilege read-only baseline checks.',
+      evidence: postureFindings.map(f => f.evidence || f),
+    };
+  }
+
   // Default Fallback
   return {
     mode: 'local',
     modeLabel: 'Local deterministic mode',
     intent: 'GENERAL_ASSISTANCE',
-    answer: 'SecretShield Local Copilot is ready. Ask about finding explanations, remediation steps, false positives, policy violations, or affected files.',
+    answer: 'SecretShield Local Copilot is ready. Ask about finding explanations, remediation steps, false positives, policy violations, deployments, or cloud resources.',
     capabilities: [
       'Why is this finding detected?',
+      'Was this finding deployed?',
+      'Which environments contained this commit?',
+      'Which production deployments contain unresolved findings?',
+      'Which cloud resources are associated with this application?',
+      'Why is this resource considered exposed?',
       'How should I fix this?',
       'Is this likely a false positive?',
-      'Where else does this fingerprint appear?',
-      'Which policy blocked this PR?',
-      'What files are affected?'
+      'Which policy blocked this PR?'
     ]
   };
 }

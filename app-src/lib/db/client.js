@@ -89,6 +89,14 @@ class MemoryStore {
     this.securityAdvisories = new Map();
     this.trustPolicies = new Map();
     this.trustSettings = new Map();
+    this.runtimeAssets = new Map();
+    this.deployments = new Map();
+    this.deploymentEvents = [];
+    this.deploymentEnvironments = new Map();
+    this.cloudAccounts = new Map();
+    this.cloudResources = new Map();
+    this.cloudFindings = new Map();
+    this.deploymentGateDecisions = [];
   }
 }
 

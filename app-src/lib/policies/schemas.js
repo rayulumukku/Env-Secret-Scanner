@@ -19,7 +19,10 @@ export const PolicyAction = Object.freeze({
   FAIL_PR: 'FAIL_PR',
   FAIL_CI: 'FAIL_CI',
   NOTIFY: 'NOTIFY',
-  CREATE_TASK: 'CREATE_TASK'
+  CREATE_TASK: 'CREATE_TASK',
+  BLOCK_DEPLOYMENT: 'BLOCK_DEPLOYMENT',
+  REQUIRE_REMEDIATION: 'REQUIRE_REMEDIATION',
+  CREATE_SECURITY_EVENT: 'CREATE_SECURITY_EVENT',
 });
 
 export const ConditionField = Object.freeze({
@@ -35,7 +38,12 @@ export const ConditionField = Object.freeze({
   REPOSITORY_VISIBILITY: 'repositoryVisibility',
   LAST_SCAN_AGE_HOURS: 'lastScanAgeHours',
   HISTORY_SCAN_STATUS: 'historyScanStatus',
-  CI_STATUS: 'ciStatus'
+  CI_STATUS: 'ciStatus',
+  ENVIRONMENT: 'environment',
+  IS_PRODUCTION: 'isProduction',
+  CLOUD_RESOURCE_EXPOSED: 'cloudResourceExposed',
+  DEPLOYMENT_STATUS: 'deploymentStatus',
+  UNRESOLVED_HIGH_FINDINGS: 'unresolvedHighFindings',
 });
 
 export const ConditionOperator = Object.freeze({

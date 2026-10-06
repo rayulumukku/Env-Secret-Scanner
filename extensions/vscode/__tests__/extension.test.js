@@ -9,6 +9,7 @@ import {
   mapSeverityToVsCode,
   createDiagnosticFromFinding,
   createHoverMarkdown,
+  formatRuntimeExposureChain,
   SecretShieldTreeDataProvider,
   SecretShieldTreeItem,
   scanDocument
@@ -94,9 +95,26 @@ describe('VS Code Extension - Core Logic', () => {
     assert.match(md, /### 🛡️ SecretShield: GitHub Personal Access Token/);
     assert.match(md, /ghp_\*{36}/);
     assert.match(md, /Shannon Entropy/);
+    assert.match(md, /Exposure Chain/);
     assert.match(md, /Scanned 100% locally/);
     // Ensure raw secret is not present
     assert.doesNotMatch(md, /ghp_EXAMPLETOKEN/);
+  });
+
+  it('formatRuntimeExposureChain formats concise Source -> Commit -> Deployment -> Environment chain', () => {
+    const chain1 = formatRuntimeExposureChain({
+      sourceStatus: 'Detected in source',
+      commitHash: '9f31a23e45',
+      deployment: { id: '184' },
+      environment: 'staging',
+    });
+    assert.strictEqual(chain1, 'Detected in source → Commit 9f31a23 → Deployment #184 → Environment: staging');
+
+    const chain2 = formatRuntimeExposureChain({
+      sourceStatus: 'Detected in source',
+      commitHash: 'abc1234',
+    });
+    assert.strictEqual(chain2, 'Detected in source → Commit abc1234 → Production status unknown');
   });
 
   it('SecretShieldTreeDataProvider manages file findings hierarchy', () => {
