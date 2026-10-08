@@ -242,7 +242,7 @@ function handleLocalCopilotQuery(q, context, options = {}) {
   }
 
   // Case F: "What files are affected?"
-  if (q.includes('files') || q.includes('affected') || q.includes('scope')) {
+  if (q.includes('files') || (q.includes('affected') && !q.includes('repositor') && !q.includes('environment')) || q.includes('scope')) {
     const files = context.filesChanged || (context.filePath ? [context.filePath] : []);
     return {
       mode: 'local',
@@ -345,22 +345,130 @@ function handleLocalCopilotQuery(q, context, options = {}) {
     };
   }
 
+  // Case L: "Why is this dependency vulnerable?"
+  if (q.includes('why') && (q.includes('dependency') || q.includes('package')) && q.includes('vulnerable')) {
+    const vuln = context.vulnerability || context.finding || {};
+    const pkg = vuln.package || context.package || 'package';
+    const installed = vuln.installedVersion || 'installed version';
+    const range = vuln.affectedRange || 'affected range';
+    const advId = vuln.advisoryId || vuln.cveId || 'advisory';
+    const reachability = vuln.reachabilityStatus || 'DECLARED';
+    return {
+      mode: 'local',
+      modeLabel: 'Local deterministic mode',
+      intent: 'DEPENDENCY_VULNERABILITY_REASON_QUERY',
+      package: pkg,
+      installedVersion: installed,
+      affectedRange: range,
+      advisoryId: advId,
+      reachability,
+      answer: `Dependency ${pkg}@${installed} is vulnerable because it satisfies affected range ${range} documented in ${advId}. Reachability evidence status: ${reachability}. (Note: SecretShield reports reachability, not unverified runtime exploitation).`,
+      evidence: vuln.evidence || vuln,
+    };
+  }
+
+  // Case M: "Where is this package used?"
+  if (q.includes('where') && (q.includes('package') || q.includes('dependency')) && (q.includes('used') || q.includes('located'))) {
+    const dep = context.dependency || context.target || {};
+    const paths = dep.dependencyPath || (dep.manifestPath ? [dep.manifestPath] : ['declared in project manifests']);
+    const isDirect = dep.isDirect !== false;
+    return {
+      mode: 'local',
+      modeLabel: 'Local deterministic mode',
+      intent: 'PACKAGE_USAGE_LOCATION_QUERY',
+      package: dep.name || context.package || 'package',
+      isDirect,
+      paths,
+      answer: `Package ${dep.name || context.package || 'package'} is used as a ${isDirect ? 'direct' : 'transitive'} dependency. Path: ${paths.join(' → ')}.`,
+      evidence: { dependencyPath: paths, isDirect },
+    };
+  }
+
+  // Case N: "Which repositories are affected?"
+  if (q.includes('which') && q.includes('repositor') && (q.includes('affected') || q.includes('contain'))) {
+    const repos = context.affectedRepositories || context.repositories || [];
+    return {
+      mode: 'local',
+      modeLabel: 'Local deterministic mode',
+      intent: 'AFFECTED_REPOSITORIES_QUERY',
+      repositoriesCount: repos.length,
+      repositories: repos,
+      answer: repos.length > 0
+        ? `Advisory or dependency affects ${repos.length} repository(ies): ${repos.join(', ')}.`
+        : 'No repositories currently match the specified dependency criteria.',
+      evidence: repos,
+    };
+  }
+
+  // Case O: "Can I upgrade safely?"
+  if (q.includes('can i upgrade') || (q.includes('upgrade') && (q.includes('safe') || q.includes('how')))) {
+    const fixedVersion = context.fixedVersion || context.vulnerability?.fixedVersion;
+    const current = context.currentVersion || context.vulnerability?.installedVersion;
+    const isDirect = context.isDirect !== false;
+    return {
+      mode: 'local',
+      modeLabel: 'Local deterministic mode',
+      intent: 'SAFE_UPGRADE_ASSESSMENT_QUERY',
+      currentVersion: current,
+      fixedVersion: fixedVersion || null,
+      answer: fixedVersion
+        ? `Safe upgrade proposal: ${current || 'current'} → ${fixedVersion}. ${isDirect ? 'Manifest update diff can be generated via SecretShield.' : 'Package is a transitive dependency; update top-level parent constraint or override in lockfile.'}`
+        : 'No authoritative fixed version is currently published in the advisory database.',
+      evidence: { currentVersion: current, fixedVersion, isDirect },
+    };
+  }
+
+  // Case P: "What does this advisory affect?"
+  if (q.includes('advisory') && (q.includes('affect') || q.includes('impact'))) {
+    const adv = context.advisory || context.vulnerability || {};
+    return {
+      mode: 'local',
+      modeLabel: 'Local deterministic mode',
+      intent: 'ADVISORY_IMPACT_QUERY',
+      advisoryId: adv.id || adv.advisoryId,
+      package: adv.package,
+      ecosystem: adv.ecosystem,
+      affectedRange: adv.affectedRange,
+      severity: adv.severity,
+      answer: `Advisory ${adv.id || adv.advisoryId || 'metadata'} affects package ${adv.package || ''} (${adv.ecosystem || 'ecosystem'}) for versions in range ${adv.affectedRange || '*'}. Severity: ${adv.severity || 'UNKNOWN'}.`,
+      evidence: adv,
+    };
+  }
+
+  // Case Q: "What changed in this PR?"
+  if (q.includes('what') && (q.includes('changed') || q.includes('pr')) && (q.includes('dependenc') || q.includes('package'))) {
+    const prDiff = context.prDiff || context.dependencyDiff || { dependencyChanges: [] };
+    const changes = prDiff.dependencyChanges || [];
+    return {
+      mode: 'local',
+      modeLabel: 'Local deterministic mode',
+      intent: 'PR_DEPENDENCY_CHANGES_QUERY',
+      totalChanges: changes.length,
+      changes,
+      answer: changes.length > 0
+        ? `PR modifies ${changes.length} dependency(ies): ${changes.map(c => `${c.package} (${c.changeType})`).join(', ')}.`
+        : 'No dependency manifest or lockfile modifications detected in this PR.',
+      evidence: prDiff,
+    };
+  }
+
   // Default Fallback
   return {
     mode: 'local',
     modeLabel: 'Local deterministic mode',
     intent: 'GENERAL_ASSISTANCE',
-    answer: 'SecretShield Local Copilot is ready. Ask about finding explanations, remediation steps, false positives, policy violations, deployments, or cloud resources.',
+    answer: 'SecretShield Local Copilot is ready. Ask about secret findings, deployments, cloud posture, or dependency supply-chain security.',
     capabilities: [
       'Why is this finding detected?',
+      'Why is this dependency vulnerable?',
+      'Where is this package used?',
+      'Which repositories are affected?',
+      'Can I upgrade safely?',
+      'What does this advisory affect?',
+      'What changed in this PR?',
       'Was this finding deployed?',
       'Which environments contained this commit?',
-      'Which production deployments contain unresolved findings?',
       'Which cloud resources are associated with this application?',
-      'Why is this resource considered exposed?',
-      'How should I fix this?',
-      'Is this likely a false positive?',
-      'Which policy blocked this PR?'
     ]
   };
 }

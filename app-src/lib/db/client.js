@@ -97,6 +97,14 @@ class MemoryStore {
     this.cloudResources = new Map();
     this.cloudFindings = new Map();
     this.deploymentGateDecisions = [];
+    this.dependencies = new Map();
+    this.dependencyVersions = new Map();
+    this.dependencyRelationships = new Map();
+    this.dependencyManifests = new Map();
+    this.advisories = new Map();
+    this.dependencyFindings = new Map();
+    this.licenseRecords = new Map();
+    this.dependencyScans = new Map();
   }
 }
 

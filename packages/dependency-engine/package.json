@@ -1,0 +1,41 @@
+{
+  "name": "@secretshield/dependency-engine",
+  "version": "1.0.0",
+  "description": "Deterministic software supply-chain security and dependency intelligence engine for SecretShield",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./manifests": "./src/manifests/index.js",
+    "./semver": "./src/semver/index.js",
+    "./graph": "./src/graph/index.js",
+    "./advisories": "./src/advisories/index.js",
+    "./licenses": "./src/licenses/index.js",
+    "./heuristics": "./src/heuristics/index.js",
+    "./reachability": "./src/reachability/index.js",
+    "./sbom": "./src/sbom/index.js",
+    "./patches": "./src/patches/index.js",
+    "./sarif": "./src/sarif/index.js",
+    "./pr": "./src/pr/index.js"
+  },
+  "files": [
+    "index.js",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test"
+  },
+  "keywords": [
+    "supply-chain-security",
+    "sbom",
+    "dependencies",
+    "vulnerabilities",
+    "advisories",
+    "license-compliance",
+    "typosquatting"
+  ],
+  "author": "SecretShield Contributors",
+  "license": "MIT"
+}

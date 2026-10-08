@@ -10,6 +10,7 @@ import {
   createDiagnosticFromFinding,
   createHoverMarkdown,
   formatRuntimeExposureChain,
+  formatDependencyManifestStatus,
   SecretShieldTreeDataProvider,
   SecretShieldTreeItem,
   scanDocument
@@ -208,5 +209,14 @@ describe('VS Code Extension - Core Logic', () => {
     // AWS key is CRITICAL, so filtering by HIGH should still include it
     const findingsHigh = scanDocument(mockDoc, mockDiagnosticsCollection, treeProvider, { severityThreshold: 'HIGH' }, mockVsCodeApi);
     assert.strictEqual(findingsHigh.length, 1);
+  });
+
+  it('formatDependencyManifestStatus formats clean and vulnerable status messages', () => {
+    const cleanStatus = formatDependencyManifestStatus('package.json', [{ name: 'lodash' }], []);
+    assert.ok(cleanStatus.includes('Clean'));
+    assert.ok(cleanStatus.includes('1 dependencies'));
+
+    const vulnStatus = formatDependencyManifestStatus('package.json', [{ name: 'lodash' }], [{ id: 'GHSA-123' }]);
+    assert.ok(vulnStatus.includes('1 vulnerability(ies) detected'));
   });
 });

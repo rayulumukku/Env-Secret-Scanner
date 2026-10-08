@@ -23,6 +23,8 @@ export const PolicyAction = Object.freeze({
   BLOCK_DEPLOYMENT: 'BLOCK_DEPLOYMENT',
   REQUIRE_REMEDIATION: 'REQUIRE_REMEDIATION',
   CREATE_SECURITY_EVENT: 'CREATE_SECURITY_EVENT',
+  REQUIRE_REVIEW: 'REQUIRE_REVIEW',
+  CREATE_ADVISORY: 'CREATE_ADVISORY',
 });
 
 export const ConditionField = Object.freeze({
@@ -44,6 +46,12 @@ export const ConditionField = Object.freeze({
   CLOUD_RESOURCE_EXPOSED: 'cloudResourceExposed',
   DEPLOYMENT_STATUS: 'deploymentStatus',
   UNRESOLVED_HIGH_FINDINGS: 'unresolvedHighFindings',
+  PACKAGE_LICENSE: 'packageLicense',
+  PACKAGE_LICENSE_DISALLOWED: 'packageLicenseDisallowed',
+  DEPENDENCY_VULNERABILITY_SEVERITY: 'dependencyVulnerabilitySeverity',
+  DEPENDENCY_IS_DEPRECATED: 'dependencyIsDeprecated',
+  CRITICAL_VULNERABILITY_EXISTS: 'criticalVulnerabilityExists',
+  HAS_SUSPICIOUS_SIGNAL: 'hasSuspiciousSignal',
 });
 
 export const ConditionOperator = Object.freeze({

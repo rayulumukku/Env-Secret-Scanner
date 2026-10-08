@@ -1243,4 +1243,152 @@ model DeploymentGateDecision {
   @@index([decision])
 }
 
+// ── SUPPLY-CHAIN SECURITY & DEPENDENCY MODELS ─────────────────────────────────
+
+model Dependency {
+  id             String    @id @default(cuid())
+  organizationId String
+  ecosystem      String    // npm | pypi | golang | cargo | rubygems | packagist | maven
+  name           String
+  description    String?
+  homepage       String?
+  repository     String?
+  isDeprecated   Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([organizationId, ecosystem, name])
+  @@index([organizationId])
+  @@index([ecosystem])
+  @@index([name])
+}
+
+model DependencyVersion {
+  id           String    @id @default(cuid())
+  dependencyId String
+  version      String
+  license      String?
+  integrity    String?
+  publishedAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@unique([dependencyId, version])
+  @@index([dependencyId])
+}
+
+model DependencyRelationship {
+  id                String   @id @default(cuid())
+  organizationId    String
+  repositoryId      String
+  parentPackage     String
+  childPackage      String
+  versionConstraint String
+  isDirect          Boolean  @default(true)
+  depth             Int      @default(1)
+  createdAt         DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([repositoryId])
+  @@index([parentPackage])
+  @@index([childPackage])
+}
+
+model DependencyManifest {
+  id             String    @id @default(cuid())
+  organizationId String
+  repositoryId   String
+  path           String
+  ecosystem      String
+  manifestType   String    // package.json | requirements.txt | go.mod | etc.
+  lockfilePath   String?
+  scannedAt      DateTime  @default(now())
+
+  @@index([organizationId])
+  @@index([repositoryId])
+  @@index([ecosystem])
+}
+
+model Advisory {
+  id             String    @id @default(cuid())
+  advisoryId     String    @unique // e.g. GHSA-xxx or CVE-xxx
+  cveId          String?
+  ecosystem      String
+  packageName    String
+  affectedRange  String
+  fixedVersion   String?
+  severity       String    // CRITICAL | HIGH | MEDIUM | LOW
+  summary        String
+  description    String
+  referencesJson String?
+  source         String    // GitHub Advisory Database | OSV | NVD
+  publishedAt    DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([ecosystem])
+  @@index([packageName])
+  @@index([severity])
+}
+
+model DependencyFinding {
+  id                 String    @id @default(cuid())
+  organizationId     String
+  repositoryId       String
+  manifestId         String?
+  packageName        String
+  ecosystem          String
+  installedVersion   String
+  affectedRange      String
+  fixedVersion       String?
+  advisoryId         String
+  severity           String    // CRITICAL | HIGH | MEDIUM | LOW
+  status             String    @default("OPEN") // OPEN | RESOLVED | SUPPRESSED
+  isDirect           Boolean   @default(true)
+  dependencyPathJson String?   // JSON array of path segments
+  reachabilityStatus String    @default("DECLARED") // DECLARED | INSTALLED | IMPORTED | POTENTIALLY_REACHABLE
+  evidenceJson       String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([organizationId])
+  @@index([repositoryId])
+  @@index([packageName])
+  @@index([severity])
+  @@index([status])
+  @@index([reachabilityStatus])
+}
+
+model LicenseRecord {
+  id             String    @id @default(cuid())
+  organizationId String
+  packageName    String
+  version        String
+  licenseId      String
+  classification String    // PERMISSIVE | COPYLEFT | WEAK_COPYLEFT | PROPRIETARY_OR_UNKNOWN | MISSING
+  requiresReview Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+
+  @@index([organizationId])
+  @@index([classification])
+  @@index([requiresReview])
+}
+
+model DependencyScan {
+  id                   String    @id @default(cuid())
+  organizationId       String
+  repositoryId         String
+  scanType             String    @default("CLI") // CLI | CI | PR | SCHEDULED
+  totalDependencies    Int       @default(0)
+  directCount          Int       @default(0)
+  transitiveCount      Int       @default(0)
+  vulnerabilitiesCount Int       @default(0)
+  status               String    @default("COMPLETED") // QUEUED | RUNNING | COMPLETED | FAILED
+  startedAt            DateTime  @default(now())
+  completedAt          DateTime?
+
+  @@index([organizationId])
+  @@index([repositoryId])
+  @@index([status])
+}
+
+
 

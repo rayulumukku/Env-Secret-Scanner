@@ -91,6 +91,26 @@ export function extractFieldValue(field, context = {}) {
         ? context.findings.filter(f => ['CRITICAL', 'HIGH'].includes(String(f.severity).toUpperCase()) && f.status !== 'REMEDIATED').length
         : 0;
 
+    case ConditionField.PACKAGE_LICENSE:
+      return context.license || finding.license || finding.packageLicense || '';
+
+    case ConditionField.PACKAGE_LICENSE_DISALLOWED:
+      return Boolean(context.isLicenseDisallowed || finding.isLicenseDisallowed || context.licenseRequiresReview);
+
+    case ConditionField.DEPENDENCY_VULNERABILITY_SEVERITY:
+      return String(context.dependencyVulnerabilitySeverity || finding.severity || 'LOW').toUpperCase();
+
+    case ConditionField.DEPENDENCY_IS_DEPRECATED:
+      return Boolean(context.isDeprecated || finding.isDeprecated || context.dependency?.isDeprecated);
+
+    case ConditionField.CRITICAL_VULNERABILITY_EXISTS: {
+      const allDeps = context.dependencyFindings || context.vulnerabilities || [];
+      return allDeps.some(v => String(v.severity).toUpperCase() === 'CRITICAL');
+    }
+
+    case ConditionField.HAS_SUSPICIOUS_SIGNAL:
+      return Boolean(context.hasSuspiciousSignal || (context.heuristicSignals && context.heuristicSignals.length > 0));
+
     default:
       return finding[field] ?? scan[field] ?? repository[field] ?? null;
   }
@@ -174,9 +194,17 @@ export function evaluateConditionPredicate(condition, observedValue) {
     }
   }
 
+  // Boolean comparisons
+  if (typeof value === 'boolean' || typeof observedValue === 'boolean') {
+    const bObs = Boolean(observedValue);
+    const bExp = value === true || String(value).toLowerCase() === 'true';
+    if (operator === ConditionOperator.EQUALS) return bObs === bExp;
+    if (operator === ConditionOperator.NOT_EQUALS) return bObs !== bExp;
+  }
+
   // General String / Array comparisons
   const strObs = String(observedValue).toUpperCase();
-  const strExp = typeof value === 'string' ? value.toUpperCase() : value;
+  const strExp = typeof value === 'string' ? value.toUpperCase() : String(value).toUpperCase();
 
   switch (operator) {
     case ConditionOperator.EQUALS:

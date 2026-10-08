@@ -251,6 +251,18 @@ program
     process.exit(exitCode);
   });
 
+// ── THREATS COMMAND ─────────────────────────────────────────────────────────
+program
+  .command('threats [action] [target]')
+  .description('Review threat-intelligence advisories and correlate them against installed dependencies')
+  .option('--json', 'Output threat intelligence data as JSON')
+  .option('--overview', 'Return a compact threat overview summary')
+  .action(async (action, target, opts) => {
+    const { threatsCommand } = await import('../lib/commands/threats.js');
+    const exitCode = await threatsCommand(action || 'list', target || '', opts);
+    process.exit(exitCode);
+  });
+
 // ── WATCH COMMAND ─────────────────────────────────────────────────────────────
 program
   .command('watch [path]')
@@ -425,6 +437,89 @@ cloud
   .action(async (opts) => {
     const { cloudCommand } = await import('../lib/commands/cloud.js');
     const exitCode = await cloudCommand('sync', opts);
+    process.exit(exitCode);
+  });
+
+// ── DEPENDENCY & SOFTWARE SUPPLY-CHAIN COMMANDS ──────────────────────────────
+const deps = program
+  .command('dependencies [action] [path]')
+  .description('Audit project dependencies, vulnerabilities, licenses, and supply-chain risk')
+  .option('--json', 'Output results as JSON')
+  .option('--sarif', 'Output results as SARIF 2.1.0')
+  .option('--quiet', 'Suppress informational output')
+  .option('--no-color', 'Disable colored terminal output')
+  .option('--package <pkg>', 'Target package for safe update proposal')
+  .option('--to <version>', 'Target version for safe update proposal')
+  .option('--manifest <file>', 'Manifest file path for update proposal', 'package.json')
+  .action(async (action, pathArg, opts) => {
+    const { dependenciesCommand } = await import('../lib/commands/dependencies.js');
+    const exitCode = await dependenciesCommand(action, pathArg, opts);
+    process.exit(exitCode);
+  });
+
+deps
+  .command('scan [path]')
+  .description('Scan project dependency manifests and lockfiles for vulnerabilities')
+  .option('--json', 'Output results as JSON')
+  .option('--sarif', 'Output results as SARIF 2.1.0')
+  .option('--quiet', 'Suppress informational output')
+  .option('--no-color', 'Disable colored terminal output')
+  .action(async (pathArg, opts) => {
+    const { dependenciesCommand } = await import('../lib/commands/dependencies.js');
+    const exitCode = await dependenciesCommand('scan', pathArg, opts);
+    process.exit(exitCode);
+  });
+
+deps
+  .command('tree [path]')
+  .description('Display hierarchical dependency tree (direct vs transitive)')
+  .option('--json', 'Output results as JSON')
+  .option('--quiet', 'Suppress informational output')
+  .option('--no-color', 'Disable colored terminal output')
+  .action(async (pathArg, opts) => {
+    const { dependenciesCommand } = await import('../lib/commands/dependencies.js');
+    const exitCode = await dependenciesCommand('tree', pathArg, opts);
+    process.exit(exitCode);
+  });
+
+deps
+  .command('audit [path]')
+  .description('Audit dependencies in CI mode — exit 1 on critical/high vulnerabilities')
+  .option('--json', 'Output results as JSON')
+  .option('--sarif', 'Output results as SARIF 2.1.0')
+  .option('--quiet', 'Suppress informational output')
+  .option('--no-color', 'Disable colored terminal output')
+  .action(async (pathArg, opts) => {
+    const { dependenciesCommand } = await import('../lib/commands/dependencies.js');
+    const exitCode = await dependenciesCommand('audit', pathArg, opts);
+    process.exit(exitCode);
+  });
+
+deps
+  .command('update [path]')
+  .description('Generate safe dependency update proposal and unified diff (dry-run)')
+  .option('--package <pkg>', 'Package name to update')
+  .option('--to <version>', 'Proposed fixed version')
+  .option('--dry-run', 'Preview changes without modifying file', true)
+  .option('--json', 'Output results as JSON')
+  .option('--quiet', 'Suppress informational output')
+  .option('--no-color', 'Disable colored terminal output')
+  .action(async (pathArg, opts) => {
+    const { dependenciesCommand } = await import('../lib/commands/dependencies.js');
+    const exitCode = await dependenciesCommand('update', pathArg, opts);
+    process.exit(exitCode);
+  });
+
+// ── SBOM COMMAND ─────────────────────────────────────────────────────────────
+program
+  .command('sbom [path]')
+  .description('Generate Software Bill of Materials (SBOM) in CycloneDX, SPDX, or JSON')
+  .option('--format <fmt>', 'SBOM format (cyclonedx, spdx, json)', 'cyclonedx')
+  .option('--output <file>', 'Save SBOM output to file')
+  .option('--quiet', 'Suppress informational output')
+  .action(async (pathArg, opts) => {
+    const { sbomCommand } = await import('../lib/commands/sbom.js');
+    const exitCode = await sbomCommand(pathArg, opts);
     process.exit(exitCode);
   });
 

@@ -10,6 +10,7 @@
 
 import { prioritizeFindings } from './priority-engine.js';
 import { SCANNER_VERSION, RULE_VERSION, CONFIG_VERSION } from '../version.js';
+import { DEFAULT_THREAT_SOURCES, getThreatIntelligenceOverview } from '../threat-intelligence/index.js';
 
 /**
  * Aggregates high-level security overview data for an organization.
@@ -244,6 +245,14 @@ export async function getSecurityProjectsData(organizationId) {
  * @param {string} unit - 'count'|'percentage'
  * @returns {Promise<Object>}
  */
+export async function getThreatIntelData(organizationId, dependencies = []) {
+  return getThreatIntelligenceOverview({
+    sources: DEFAULT_THREAT_SOURCES,
+    items: [],
+    dependencies,
+  });
+}
+
 export async function getSecurityTrendsData(organizationId, range = '30d', unit = 'count') {
   const days = range === '7d' ? 7 : range === '90d' ? 90 : range === '1y' ? 365 : 30;
   const timeline = [];
