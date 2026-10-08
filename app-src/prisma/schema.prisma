@@ -333,6 +333,67 @@ model Baseline {
   @@index([projectId])
 }
 
+model SecurityEvent {
+  id             String   @id @default(cuid())
+  organizationId String
+  projectId      String?
+  repositoryId   String?
+  eventType      String
+  category       String
+  timestamp      DateTime @default(now())
+  actorId        String?
+  source         String
+  relatedEntityId String?
+  metadataJson   String?  // Sanitized, non-secret metadata only
+  evidenceIdsJson String?
+  schemaVersion  String   @default("v2")
+  quarantined    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([timestamp])
+  @@index([eventType])
+  @@index([repositoryId])
+  @@index([projectId])
+  @@index([schemaVersion])
+}
+
+model SecuritySnapshot {
+  id                 String   @id @default(cuid())
+  organizationId      String
+  projectId           String?
+  repositoryId        String?
+  snapshotDate        DateTime
+  openFindings        Int      @default(0)
+  criticalFindings    Int      @default(0)
+  highFindings        Int      @default(0)
+  uniqueExposedFingerprints Int @default(0)
+  repositoriesWithFindings Int @default(0)
+  dependencyVulnerabilities Int @default(0)
+  deploymentViolations Int     @default(0)
+  policyViolations    Int      @default(0)
+  incidents           Int      @default(0)
+  remediationBacklog  Int      @default(0)
+  metricsJson         String?
+  createdAt           DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([snapshotDate])
+  @@index([repositoryId])
+  @@index([projectId])
+}
+
+model SavedAnalyticsQuery {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  queryJson      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId])
+}
+
 // ── INTEGRATIONS & WEBHOOKS ───────────────────────────────────────────────────
 
 model ProviderConnection {

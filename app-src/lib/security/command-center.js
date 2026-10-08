@@ -11,6 +11,15 @@
 import { prioritizeFindings } from './priority-engine.js';
 import { SCANNER_VERSION, RULE_VERSION, CONFIG_VERSION } from '../version.js';
 import { DEFAULT_THREAT_SOURCES, getThreatIntelligenceOverview } from '../threat-intelligence/index.js';
+import {
+  buildForensicTimeline,
+  createDailySecuritySnapshot,
+  detectImprovement,
+  detectRegression,
+  getHistoricalReplay,
+  ingestSecurityEvent,
+} from '../analytics/security-events.js';
+import { getSecurityOverview, getSecurityTrendSeries } from '../analytics/security-trends.js';
 
 /**
  * Aggregates high-level security overview data for an organization.
@@ -420,4 +429,46 @@ export async function getSecurityDigestData(organizationId) {
     prsScanned: 6,
     digestStatement: '3 repositories scanned across 18 scan executions. 0 new findings this week, 3 findings resolved. 1 high-severity finding remains active.'
   };
+}
+
+export async function getSecurityAnalyticsData(organizationId, events = []) {
+  const overview = getSecurityOverview({ organizationId, events });
+  return {
+    organizationId,
+    generatedAt: new Date().toISOString(),
+    evidenceOnly: true,
+    overview,
+    snapshot: createDailySecuritySnapshot(events, new Date().toISOString().slice(0, 10), organizationId),
+  };
+}
+
+export async function getSecurityAnalyticsTrendsData(organizationId, rangeDays = 30, metric = 'open_findings', events = []) {
+  return getSecurityTrendSeries({ organizationId, metric, rangeDays, events });
+}
+
+export async function getSecurityForensicsData(organizationId, filters = {}, events = []) {
+  return buildForensicTimeline({
+    organizationId,
+    repositoryId: filters.repositoryId || null,
+    fingerprint: filters.fingerprint || null,
+    findingId: filters.findingId || null,
+    eventType: filters.eventType || null,
+    events,
+  });
+}
+
+export async function getSecurityHistoricalReplayData(organizationId, asOfDate, events = []) {
+  return getHistoricalReplay({ organizationId, asOfDate, events });
+}
+
+export async function registerSecurityEvent(event) {
+  return ingestSecurityEvent(event);
+}
+
+export async function evaluateSecurityRegression(events, context) {
+  return detectRegression(events, context);
+}
+
+export async function evaluateSecurityImprovement(events, context) {
+  return detectImprovement(events, context);
 }
