@@ -25,9 +25,7 @@
   ],
   "icon": "assets/icon.png",
   "main": "./extension.js",
-  "scripts": {
-    "test": "node --test"
-  },
+
   "dependencies": {
     "@secretshield/scanner": "file:../../packages/scanner",
     "@secretshield/config": "file:../../packages/config"

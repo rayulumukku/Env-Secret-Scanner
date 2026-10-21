@@ -4,9 +4,7 @@
   "description": "Developer Security Copilot & IDE Intelligence Layer for SecretShield",
   "main": "index.js",
   "type": "module",
-  "scripts": {
-    "test": "node --test"
-  },
+
   "keywords": [
     "secret-detection",
     "copilot",

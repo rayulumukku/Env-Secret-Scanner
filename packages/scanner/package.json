@@ -21,9 +21,7 @@
     "README.md",
     "LICENSE"
   ],
-  "scripts": {
-    "test": "node --test"
-  },
+
   "keywords": [
     "secret-scanner",
     "credential-leak",

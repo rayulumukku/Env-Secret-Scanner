@@ -4,9 +4,7 @@
   "description": "Declarative, versioned rule pack ecosystem for SecretShield",
   "main": "src/index.js",
   "type": "module",
-  "scripts": {
-    "test": "node --test"
-  },
+
   "keywords": [
     "secretshield",
     "security",

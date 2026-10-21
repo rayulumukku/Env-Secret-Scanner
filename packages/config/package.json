@@ -12,9 +12,7 @@
     "README.md",
     "LICENSE"
   ],
-  "scripts": {
-    "test": "node --test"
-  },
+
   "keywords": [
     "secretshield",
     "configuration",
