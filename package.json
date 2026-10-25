@@ -8,10 +8,6 @@
     "packages/*",
     "extensions/*"
   ],
-  "scripts": {
-    "build:web": "npm run build --workspace=secretshield-web",
-    "db:generate": "npx prisma generate --schema=app-src/prisma/schema.prisma",
-    "lint": "echo 'All packages clean'"
-  },
+
   "description": "SecretShield — unified secret detection ecosystem for developers"
 }
