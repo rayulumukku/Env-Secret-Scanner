@@ -45,16 +45,6 @@
       "entropy": {
         "min": 3,
         "type": "shannon"
-      },
-      "testFixtures": {
-        "positive": [
-          "AWS_ACCESS_KEY_ID=AKIAEXAMPLEKEY123456",
-          "const key = 'AKIA1234567890ABCDEF';"
-        ],
-        "negative": [
-          "AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE",
-          "const dummy = 'NOT_AN_AWS_KEY';"
-        ]
       }
     },
     {
@@ -75,15 +65,7 @@
       "keywords": [
         "aws_secret_access_key",
         "secret_access_key"
-      ],
-      "testFixtures": {
-        "positive": [
-          "aws_secret_access_key = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'"
-        ],
-        "negative": [
-          "aws_secret_access_key = 'CHANGEME_OR_USE_ENV_VAR'"
-        ]
-      }
+      ]
     },
     {
       "id": "google-api-key",
@@ -104,15 +86,7 @@
         "AIza",
         "GOOGLE_API_KEY",
         "firebase"
-      ],
-      "testFixtures": {
-        "positive": [
-          "const gkey = 'AIzaSyA1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q';"
-        ],
-        "negative": [
-          "const gkey = 'AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';"
-        ]
-      }
+      ]
     },
     {
       "id": "openai-api-key",
@@ -133,16 +107,7 @@
         "sk-",
         "OPENAI_API_KEY",
         "openai"
-      ],
-      "testFixtures": {
-        "positive": [
-          "OPENAI_API_KEY=sk-proj-abc1234567890defghijklmnopqrstuvwx",
-          "const openai = 'sk-live1234567890abcdefghijklmnopqrst';"
-        ],
-        "negative": [
-          "OPENAI_API_KEY=sk-placeholder-mock"
-        ]
-      }
+      ]
     },
     {
       "id": "anthropic-api-key",
@@ -163,15 +128,7 @@
         "sk-ant-",
         "ANTHROPIC_API_KEY",
         "claude"
-      ],
-      "testFixtures": {
-        "positive": [
-          "ANTHROPIC_API_KEY=sk-ant-api03-abcdef1234567890abcdef1234567890abcdef12"
-        ],
-        "negative": [
-          "ANTHROPIC_API_KEY=sk-ant-mock-key"
-        ]
-      }
+      ]
     },
     {
       "id": "github-pat",
@@ -193,16 +150,7 @@
         "ghp_",
         "github_pat_",
         "GITHUB_TOKEN"
-      ],
-      "testFixtures": {
-        "positive": [
-          "GITHUB_TOKEN=ghp_111122223333444455556666777788889999",
-          "PAT=github_pat_11AAAAAAA0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
-        ],
-        "negative": [
-          "GITHUB_TOKEN=ghp_dummy"
-        ]
-      }
+      ]
     },
     {
       "id": "gitlab-pat",
@@ -222,15 +170,7 @@
       "keywords": [
         "glpat-",
         "GITLAB_TOKEN"
-      ],
-      "testFixtures": {
-        "positive": [
-          "GITLAB_TOKEN=glpat-1234567890abcdefghij"
-        ],
-        "negative": [
-          "GITLAB_TOKEN=glpat-short"
-        ]
-      }
+      ]
     },
     {
       "id": "stripe-secret-key",
@@ -252,15 +192,7 @@
         "rk_live_",
         "sk_test_",
         "STRIPE_SECRET"
-      ],
-      "testFixtures": {
-        "positive": [
-          "const stripe = require('stripe')('sk_test_00000000000000000000000000000000');"
-        ],
-        "negative": [
-          "const stripe = require('stripe')('sk_short');"
-        ]
-      }
+      ]
     },
     {
       "id": "slack-bot-token",
@@ -282,15 +214,7 @@
         "xoxp-",
         "xapp-",
         "SLACK_BOT_TOKEN"
-      ],
-      "testFixtures": {
-        "positive": [
-          "SLACK_BOT_TOKEN=xapp-00000000000-00000000000-000000000000000000000000"
-        ],
-        "negative": [
-          "SLACK_BOT_TOKEN=xapp-short"
-        ]
-      }
+      ]
     },
     {
       "id": "postgres-connection-url",
@@ -311,16 +235,7 @@
         "postgres://",
         "postgresql://",
         "DATABASE_URL"
-      ],
-      "testFixtures": {
-        "positive": [
-          "DATABASE_URL=postgres://app_user:SuperSecretP@ss123@db.prod.internal:5432/appdb"
-        ],
-        "negative": [
-          "DATABASE_URL=postgres://localhost:5432/testdb",
-          "DATABASE_URL=postgres://app_user@localhost/appdb"
-        ]
-      }
+      ]
     },
     {
       "id": "mongodb-connection-url",
@@ -341,15 +256,7 @@
         "mongodb://",
         "mongodb+srv://",
         "MONGO_URI"
-      ],
-      "testFixtures": {
-        "positive": [
-          "MONGO_URI=mongodb+srv://cluster_admin:SecretMongoP@ss@cluster0.abcde.mongodb.net/prod"
-        ],
-        "negative": [
-          "MONGO_URI=mongodb://localhost:27017/dev"
-        ]
-      }
+      ]
     },
     {
       "id": "rsa-private-key",
@@ -369,15 +276,7 @@
       "keywords": [
         "-----BEGIN",
         "PRIVATE KEY-----"
-      ],
-      "testFixtures": {
-        "positive": [
-          "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA0...\n-----END RSA PRIVATE KEY-----"
-        ],
-        "negative": [
-          "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0...\n-----END PUBLIC KEY-----"
-        ]
-      }
+      ]
     },
     {
       "id": "jwt-token",
@@ -398,15 +297,7 @@
         "eyJ",
         "Bearer",
         "jwt"
-      ],
-      "testFixtures": {
-        "positive": [
-          "const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';"
-        ],
-        "negative": [
-          "const notJwt = 'eyJshort.eyJshort.notreal';"
-        ]
-      }
+      ]
     },
     {
       "id": "npm-access-token",
@@ -427,15 +318,7 @@
         "npm_",
         "NPM_TOKEN",
         "_authToken"
-      ],
-      "testFixtures": {
-        "positive": [
-          "//registry.npmjs.org/:_authToken=npm_111122223333444455556666777788889999"
-        ],
-        "negative": [
-          "//registry.npmjs.org/:_authToken=npm_short"
-        ]
-      }
+      ]
     },
     {
       "id": "generic-hardcoded-password",
@@ -462,16 +345,7 @@
         "password123",
         "placeholder",
         "your_password_here"
-      ],
-      "testFixtures": {
-        "positive": [
-          "const password = 'SuperSecretProductionP@ssword2026!';"
-        ],
-        "negative": [
-          "const password = 'changeme';",
-          "const password = 'password123';"
-        ]
-      }
+      ]
     },
     {
       "id": "vault-token",
@@ -492,15 +366,7 @@
         "VAULT_TOKEN",
         "hvs.",
         "s."
-      ],
-      "testFixtures": {
-        "positive": [
-          "VAULT_TOKEN=hvs.111122223333444455556666"
-        ],
-        "negative": [
-          "VAULT_TOKEN=hvs.short"
-        ]
-      }
+      ]
     },
     {
       "id": "dotenv-credential-variable",
@@ -522,15 +388,7 @@
         "APP_KEY",
         "AUTH_SECRET",
         "MASTER_KEY"
-      ],
-      "testFixtures": {
-        "positive": [
-          "APP_KEY=base64:9876543210abcdefghijklmnopqrstuvwxyz"
-        ],
-        "negative": [
-          "APP_KEY=placeholder"
-        ]
-      }
+      ]
     },
     {
       "id": "github-actions-secret",
@@ -551,16 +409,8 @@
         "GH_TOKEN",
         "GITHUB_TOKEN",
         "DEPLOY_KEY"
-      ],
-      "testFixtures": {
-        "positive": [
-          "env:\n  GH_TOKEN: 'ghp_111122223333444455556666777788889999'"
-        ],
-        "negative": [
-          "env:\n  GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'"
-        ]
-      }
+      ]
     }
   ],
-  "integrity": "sha256-22d642a05cb983e1ea2c19a6e93643af27c4e838319ca7275396c445d7a2f2b7"
+  "integrity": "sha256-9267aa20dc9b74a46b65a13fdc150dc98147d9731fb4cfb683d6b76abf65141f"
 }

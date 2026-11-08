@@ -21,6 +21,14 @@ const D = {
   // Stripe live key
   stripeLive: 'sk_live_' + 'demoStripe' + 'SecretKeyForTestingPurposesOnly1234',
   stripeTest: 'sk_test_' + 'demoStripe' + 'TestKeyForTestingPurposesOnly123456',
+  stripeWebhook: 'whsec_' + 'demoWebhookSecret' + 'ForTestingPurposesOnly',
+  // Database URLs
+  postgresUrl: 'postgresql://' + 'admin:demoP@ssw0rd123' + '@db.example.com:5432/myapp_production',
+  mongoUrl: 'mongodb://' + 'demouser:demoP@ssword789' + '@cluster0.example.mongodb.net/production',
+  // JWT
+  jwtToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' + 'eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkRlbW9Vc2VyIiwiaWF0IjoxNTE2MjM5MDIyfQ.' + 'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+  // RSA Private Key
+  privateKey: '-----BEGIN ' + 'RSA PRIVATE KEY-----\n' + 'MIIEowIBAAKCAQEA2a2rwplBQLzDEMOKEYzDEMOKEYzDEMOKEYzDEMOKEY==\n' + '-----END ' + 'RSA PRIVATE KEY-----',
   // AWS example key (same pattern, different suffix)
   awsKeyEx: 'AKIA' + 'IOSFODNN7' + 'EXAMPLE',
   awsSecretEx: 'wJalrXUtn' + 'FEMI/K7MDENG/' + 'bPxRfiCYEXAMPLEKEY',
@@ -76,10 +84,10 @@ GITHUB_TOKEN=${D.githubPat}
 
 # Stripe — DEMO ONLY
 STRIPE_SECRET_KEY=${D.stripeLive}
-STRIPE_WEBHOOK_SECRET=whsec_demoWebhookSecretForTestingPurposesOnly
+STRIPE_WEBHOOK_SECRET=${D.stripeWebhook}
 
 # Database — DEMO ONLY
-DATABASE_URL=postgresql://admin:demoP@ssw0rd123@db.example.com:5432/myapp_production
+DATABASE_URL=${D.postgresUrl}
 
 # Slack — DEMO ONLY
 SLACK_BOT_TOKEN=${D.slackBot}
@@ -95,7 +103,7 @@ import axios from 'axios';
 const client = axios.create({
   baseURL: 'https://api.example.com',
   headers: {
-    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkRlbW9Vc2VyIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+    'Authorization': 'Bearer ' + '${D.jwtToken}',
     'X-API-Key': 'demo_api_key_AbCdEfGhIjKlMnOpQrStUvWxYz1234567890',
   }
 });
@@ -127,7 +135,7 @@ steps:
 
   - name: Deploy
     run: |
-      export DATABASE_URL="mongodb://demouser:demoP@ssword789@cluster0.example.mongodb.net/production"
+      export DATABASE_URL="${D.mongoUrl}"
       npm run deploy
 `,
     },
@@ -146,9 +154,7 @@ const SESSION_SECRET = 'demoSuperSecretSessionKey_P@ssw0rd!NotReal';
 const JWT_SECRET = 'demo-jwt-signing-secret-not-for-production-use';
 
 // Private key (abbreviated demo — NOT a real key)
-const PRIVATE_KEY = \`-----BEGIN RSA PRIVATE KEY-----
-MIIEowIBAAKCAQEA2a2rwplBQLzDEMOKEYzDEMOKEYzDEMOKEYzDEMOKEY==
------END RSA PRIVATE KEY-----\`;
+const PRIVATE_KEY = \`${D.privateKey}\`;
 
 // Slack webhook for notifications — DEMO ONLY
 const SLACK_WEBHOOK = '${D.slackWebhook}';

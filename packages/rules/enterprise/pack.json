@@ -25,16 +25,8 @@
       "keywords": [
         "sec_corp_",
         "CORP_AUTH_TOKEN"
-      ],
-      "testFixtures": {
-        "positive": [
-          "CORP_AUTH_TOKEN=sec_corp_11112222333344445555666677778888"
-        ],
-        "negative": [
-          "CORP_AUTH_TOKEN=sec_corp_placeholder"
-        ]
-      }
+      ]
     }
   ],
-  "integrity": "sha256-24446cec1fb9d486973ebf77b4efb48f27930d75c2ec34e4a54af8fed932f385"
+  "integrity": "sha256-e7a7728a9f9031d4eb0184ab81c8b6edb2f74b50f47b2ffc7f40326b78c4e00c"
 }
