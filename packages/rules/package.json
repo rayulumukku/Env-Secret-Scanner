@@ -4,7 +4,9 @@
   "description": "Declarative, versioned rule pack ecosystem for SecretShield",
   "main": "src/index.js",
   "type": "module",
-
+  "scripts": {
+    "validate": "node -e \"import('./src/index.js').then(m => ['core', 'community', 'enterprise'].forEach(p => console.log(p, m.validateRulePackManifest(m.loadBuiltinPack(p)))))'\""
+  },
   "keywords": [
     "secretshield",
     "security",

@@ -8,6 +8,13 @@
     "packages/*",
     "extensions/*"
   ],
-
+  "scripts": {
+    "dev": "npm run dev --workspace=secretshield-web",
+    "build": "npm run build --workspace=secretshield-web",
+    "start": "npm run start --workspace=secretshield-web",
+    "lint": "npm run lint --workspace=secretshield-web",
+    "scan": "node packages/cli/bin/secretshield.js scan .",
+    "db:generate": "npx prisma generate --schema=app-src/prisma/schema.prisma"
+  },
   "description": "SecretShield — unified secret detection ecosystem for developers"
 }

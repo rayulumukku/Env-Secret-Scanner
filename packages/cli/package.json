@@ -6,7 +6,9 @@
   "bin": {
     "secretshield": "./bin/secretshield.js"
   },
-
+  "scripts": {
+    "start": "node ./bin/secretshield.js"
+  },
   "dependencies": {
     "commander": "^12.1.0"
   },

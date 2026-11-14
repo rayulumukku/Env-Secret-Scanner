@@ -21,7 +21,9 @@
     "README.md",
     "LICENSE"
   ],
-
+  "scripts": {
+    "scan": "node ../cli/bin/secretshield.js scan"
+  },
   "keywords": [
     "secret-scanner",
     "credential-leak",

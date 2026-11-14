@@ -39,8 +39,8 @@
         "tf"
       ],
       "exclusions": [
-        "AKIAIOSFODNN7EXAMPLE",
-        "AKIAXXXXXXXXXXXXXXXX"
+        "AKIA_EXAMPLE",
+        "AKIA_PLACEHOLDER"
       ],
       "entropy": {
         "min": 3,
@@ -412,5 +412,5 @@
       ]
     }
   ],
-  "integrity": "sha256-9267aa20dc9b74a46b65a13fdc150dc98147d9731fb4cfb683d6b76abf65141f"
+  "integrity": "sha256-e7e55ae4727938f82021fde9e1c422a5848bc31821165f21ae6383d1bca06809"
 }
