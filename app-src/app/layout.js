@@ -1,10 +1,10 @@
 import './globals.css';
-import { Inter } from 'next/font/google';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Toaster } from '@/components/ui/toast';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const inter = { variable: 'font-sans' };
+
 
 export const metadata = {
   title: {

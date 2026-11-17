@@ -36,7 +36,7 @@ export async function runtimeCommand(subcommand = '', options = {}) {
 
     if (options.quiet) return 0;
 
-    console.log('\n  SecretShield  v2.0  Deployment Inventory');
+    console.log('\n  SecretShield  v1.0.0  Deployment Inventory');
     console.log('  ─────────────────────────────────────────────────────────────────────────────\n');
 
     if (deployments.length === 0) {
@@ -82,7 +82,7 @@ export async function runtimeCommand(subcommand = '', options = {}) {
 
     if (options.quiet) return 0;
 
-    console.log('\n  SecretShield  v2.0  Runtime & Deployment Exposure Correlation');
+    console.log('\n  SecretShield  v1.0.0  Runtime & Deployment Exposure Correlation');
     console.log('  ─────────────────────────────────────────────────────────────────────────────\n');
     console.log(`  Total Evaluated:        ${findings.length}`);
     console.log(`  Source Exposure Only:   ${sourceOnly}`);
@@ -124,7 +124,7 @@ export async function runtimeCommand(subcommand = '', options = {}) {
 
   if (options.quiet) return 0;
 
-  console.log('\n  SecretShield  v2.0  Runtime Security Posture');
+  console.log('\n  SecretShield  v1.0.0  Runtime Security Posture');
   console.log('  ─────────────────────────────────────────────────────────────────────────────\n');
   console.log(`  Registered Assets:      ${assetsData.total}`);
   console.log(`  Deployments Tracked:    ${depsData.total}`);

@@ -115,7 +115,7 @@ export default function ScannerApiDocsPage() {
                 <BookOpen className="w-5 h-5 text-primary" />
                 <h1 className="text-xl font-bold">Scanner API Contract</h1>
                 <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary">
-                  v2.0 Specification
+                  v1.0.0 Specification
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">

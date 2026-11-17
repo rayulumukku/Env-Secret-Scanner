@@ -36,7 +36,7 @@ export async function GET(request) {
 
     const sbomJson = generateSbom(scanResult.graph, format, {
       appName: 'SecretShield',
-      version: '2.0.0'
+      version: '1.0.0'
     });
 
     return new Response(sbomJson, {

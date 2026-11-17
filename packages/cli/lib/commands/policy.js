@@ -100,7 +100,7 @@ export async function runPolicyCheck(scanPath = '.', options = {}) {
     }
 
     // Human-readable CLI output
-    console.log('\n  SecretShield  v2.0  Policy Evaluation');
+    console.log('\n  SecretShield  v1.0.0  Policy Evaluation');
     console.log('  ─────────────────────────────────────');
     if (dryRun) {
       console.log('  Mode: DRY RUN (violations will not fail CI)\n');

@@ -35,7 +35,7 @@ export async function cloudCommand(subcommand = '', options = {}) {
 
     if (options.quiet) return 0;
 
-    console.log('\n  SecretShield  v2.0  Cloud Resource Inventory');
+    console.log('\n  SecretShield  v1.0.0  Cloud Resource Inventory');
     console.log('  ─────────────────────────────────────────────────────────────────────────────\n');
 
     if (resources.length === 0) {
@@ -103,7 +103,7 @@ export async function cloudCommand(subcommand = '', options = {}) {
 
   if (options.quiet) return 0;
 
-  console.log('\n  SecretShield  v2.0  Connected Cloud Accounts');
+  console.log('\n  SecretShield  v1.0.0  Connected Cloud Accounts');
   console.log('  ─────────────────────────────────────────────────────────────────────────────\n');
 
   if (accounts.length === 0) {

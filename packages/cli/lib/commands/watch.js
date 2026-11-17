@@ -35,7 +35,7 @@ export async function watchCommand(targetPath = '.', opts = {}) {
   const debounceMs = parseInt(opts.debounce || '300', 10);
 
   if (!isJson) {
-    console.log('\n  SecretShield  v2.0  Continuous Watch Mode');
+    console.log('\n  SecretShield  v1.0.0  Continuous Watch Mode');
     console.log('  ─────────────────────────────────────────────────────────────────────────────');
     console.log(`  Watching: ${rootDir}`);
     console.log(`  Mode: ${isStaged ? 'Git Staged Files' : 'Filesystem Live Watch'}`);
@@ -151,7 +151,7 @@ export async function devCommand(targetPath = '.', opts = {}) {
   if (isJson) {
     console.log(JSON.stringify({
       mode: 'dev',
-      scannerVersion: '2.0.0',
+      scannerVersion: '1.0.0',
       activeRulesCount: ALL_RULES.length,
       watchedDirectory: rootDir,
       status: 'READY',
@@ -159,9 +159,9 @@ export async function devCommand(targetPath = '.', opts = {}) {
     return 0;
   }
 
-  console.log('\n  SecretShield  v2.0  Local Developer Mode');
+  console.log('\n  SecretShield  v1.0.0  Local Developer Mode');
   console.log('  ─────────────────────────────────────────────────────────────────────────────');
-  console.log(`  Local Scanner Engine:   v2.0.0 (Active Rules: ${ALL_RULES.length})`);
+  console.log(`  Local Scanner Engine:   v1.0.0 (Active Rules: ${ALL_RULES.length})`);
   console.log(`  Watched Directory:      ${rootDir}`);
   console.log('  Policy Evaluation:      Local Offline Engine (No SaaS connection required)');
   console.log('  Detection Rules:        Core + Community Rule Packs');

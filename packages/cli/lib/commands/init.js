@@ -13,7 +13,7 @@ export async function initCommand(options = {}) {
   const cwd = process.cwd();
   const configPath = resolve(cwd, '.secretshield.json');
 
-  console.log('\n  SecretShield  v2.0  project initialization');
+  console.log('\n  SecretShield  v1.0.0  project initialization');
   console.log('  ───────────────────────────────────────────────────\n');
 
   if (existsSync(configPath) && !options.force) {

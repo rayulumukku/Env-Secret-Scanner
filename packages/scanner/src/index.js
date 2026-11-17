@@ -72,3 +72,9 @@ export {
 export {
   generateQuickFix,
 } from './intelligence/quick-fixes.js';
+
+export {
+  runBenchmark,
+  generateSyntheticFixtures,
+} from './benchmark.js';
+

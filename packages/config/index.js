@@ -9,10 +9,10 @@
  */
 
 import { readFileSync, existsSync } from 'fs';
-import { resolve } from 'path';
+import { resolve, dirname } from 'path';
 
 export const DEFAULT_CONFIG = {
-  version: '2.0.0',
+  version: '1.0.0',
   severityThreshold: 'low',
   minConfidence: 70,
   ignore: [
@@ -233,6 +233,24 @@ export function evaluateLocalPolicies(findings = [], config = DEFAULT_CONFIG) {
 }
 
 /**
+ * Walk up directory tree from startDir looking for .secretshield.json.
+ *
+ * @param {string} [startDir=process.cwd()]
+ * @returns {string|null} path to config file or null
+ */
+export function findConfigFile(startDir = process.cwd()) {
+  let current = resolve(startDir);
+  while (true) {
+    const candidate = resolve(current, DEFAULT_CONFIG_FILE);
+    if (existsSync(candidate)) return candidate;
+    const parent = dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  return null;
+}
+
+/**
  * Load configuration from disk.
  *
  * @param {string} [configPath] - explicit path to config file
@@ -243,9 +261,9 @@ export function loadConfig(configPath, cwd = process.cwd()) {
   const warnings = [];
   const filePath = configPath
     ? resolve(configPath)
-    : resolve(cwd, DEFAULT_CONFIG_FILE);
+    : findConfigFile(cwd);
 
-  if (!existsSync(filePath)) {
+  if (!filePath || !existsSync(filePath)) {
     return { config: { ...DEFAULT_CONFIG, scan: { ...DEFAULT_CONFIG.scan } }, source: 'defaults', warnings };
   }
 
@@ -282,7 +300,7 @@ export function loadConfig(configPath, cwd = process.cwd()) {
 export function generateSampleConfig(overrides = {}) {
   const sample = {
     $schema: 'https://secretshield.dev/schemas/config.json',
-    version: '2.0.0',
+    version: '1.0.0',
     severityThreshold: overrides.severityThreshold || 'low',
     minConfidence: 70,
     ignore: [

@@ -5,8 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "test": "node -e \"process.exit(0)\"",
+    "prebuild": "node -e \"try{fs.rmSync('.next',{recursive:true,force:true,maxRetries:5,retryDelay:50})}catch(e){}\"",
+    "build": "next build --webpack",
     "start": "next start",
+    "scan": "node ../packages/cli/bin/secretshield.js scan . --config ../.secretshield.json",
     "lint": "eslint"
   },
   "dependencies": {

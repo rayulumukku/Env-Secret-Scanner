@@ -13,7 +13,8 @@
     "./fingerprint": "./src/fingerprint.js",
     "./confidence": "./src/confidence.js",
     "./file-filter": "./src/file-filter.js",
-    "./regex-safety": "./src/regex-safety.js"
+    "./regex-safety": "./src/regex-safety.js",
+    "./benchmark": "./src/benchmark.js"
   },
   "files": [
     "index.js",
@@ -22,7 +23,10 @@
     "LICENSE"
   ],
   "scripts": {
-    "scan": "node ../cli/bin/secretshield.js scan"
+    "test": "node --test ../../tests/scanner/scanner.test.js",
+    "build": "node -e \"process.exit(0)\"",
+    "scan": "node ../cli/bin/secretshield.js scan . --config ../../.secretshield.json",
+    "lint": "node --check index.js src/**/*.js"
   },
   "keywords": [
     "secret-scanner",

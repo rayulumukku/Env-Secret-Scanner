@@ -39,7 +39,7 @@ export default function RuleVersioningDocPage() {
             <p className="pl-4 text-emerald-400">&quot;ruleVersion&quot;: &quot;1.0.0&quot;,</p>
             <p className="pl-4 text-primary">&quot;rulePackId&quot;: &quot;core-rules&quot;,</p>
             <p className="pl-4 text-primary">&quot;rulePackVersion&quot;: &quot;1.0.0&quot;,</p>
-            <p className="pl-4 text-yellow-300">&quot;scannerVersion&quot;: &quot;2.0.0&quot;</p>
+            <p className="pl-4 text-yellow-300">&quot;scannerVersion&quot;: &quot;1.0.0&quot;</p>
             <p className="text-foreground">&#125;</p>
           </div>
         </div>

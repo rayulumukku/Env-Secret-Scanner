@@ -240,7 +240,7 @@ export default function TrustIncidentsPage() {
                       <Badge variant="outline" className="text-[10px]">{inc.status}</Badge>
                     </div>
                     <div className="text-[11px] text-muted-foreground font-mono">
-                      ID: {inc.id} • Created: {new Date(inc.createdAt || Date.now()).toLocaleDateString()}
+                      ID: {inc.id} • Created: {inc.createdAt ? new Date(inc.createdAt).toLocaleDateString() : 'N/A'}
                     </div>
                   </div>
                   <Button

@@ -19,7 +19,7 @@
  *   - File paths are not interpolated into shell commands
  */
 
-import { resolve } from 'path';
+import { resolve, dirname } from 'path';
 import { existsSync, writeFileSync } from 'fs';
 import { collectFiles, readFiles, getScanner } from '../scanner-bridge.js';
 import { loadConfig, meetsThreshold } from '../config.js';
@@ -53,7 +53,8 @@ export async function runScan(scanPath, opts = {}) {
 
   // ── LOAD CONFIG ────────────────────────────────────────────────────────────
   const cwd = resolve(scanPath || process.cwd());
-  const { config: cfg, warnings } = loadConfig(config, cwd);
+  const { config: cfg, warnings, source } = loadConfig(config, cwd);
+  const configDir = (source && source !== 'defaults') ? dirname(source) : null;
 
   const cliIgnores = ignore
     ? (Array.isArray(ignore) ? ignore : String(ignore).split(',')).map(s => s.trim()).filter(Boolean)
@@ -127,6 +128,7 @@ export async function runScan(scanPath, opts = {}) {
       ignorePatterns: effectiveIgnore,
       maxFileSize:    cfg.scan.maxFileSize,
       root:           resolve(scanPath || '.'),
+      configDir,
     });
   }
 
@@ -172,7 +174,7 @@ export async function runScan(scanPath, opts = {}) {
     // JSON output — structured, no ANSI, no raw secrets
     console.log(JSON.stringify({
       tool:       'SecretShield',
-      version:    '2.0.0',
+      version:    '1.0.0',
       timestamp:  new Date().toISOString(),
       target:     scanPath || '.',
       statistics: stats,

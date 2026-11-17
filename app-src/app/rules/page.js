@@ -506,7 +506,7 @@ export default function RulesPage() {
             <div>
               <div className="flex items-center gap-2">
                 <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">
-                  RULE ECOSYSTEM v2.0
+                  RULE ECOSYSTEM v1.0.0
                 </Badge>
                 <span className="text-xs text-muted-foreground font-mono">100% Declarative & ReDoS-Safe</span>
               </div>

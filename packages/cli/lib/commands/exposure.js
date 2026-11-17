@@ -24,7 +24,7 @@ export async function exposureCommand(subAction = 'list', targetArg = '', option
       return 0;
     }
 
-    console.log('\n  SecretShield  v2.0  Secret Exposure Intelligence');
+    console.log('\n  SecretShield  v1.0.0  Secret Exposure Intelligence');
     console.log('  ─────────────────────────────────────────────────────────────────────────────\n');
 
     if (clusters.length === 0) {

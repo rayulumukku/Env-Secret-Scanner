@@ -202,7 +202,7 @@ function scanFile(content, filename, customRules = [], allowlistFingerprints = [
     ruleVersion: finding.ruleVersion || '1.0.0',
     rulePackId: finding.rulePackId || (finding.isCustomRule ? 'custom-rules' : 'core-rules'),
     rulePackVersion: finding.rulePackVersion || '1.0.0',
-    scannerVersion: '2.0.0',
+    scannerVersion: '1.0.0',
   }));
 
   // Apply precedence-aware deduplication (core vs org vs custom)

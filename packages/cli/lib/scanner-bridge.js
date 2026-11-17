@@ -62,6 +62,7 @@ export function collectFiles(dirPath, options = {}) {
     ignorePatterns = [],
     maxFileSize    = MAX_FILE_SIZE,
     root           = dirPath,
+    configDir      = null,
   } = options;
 
   const files = [];
@@ -78,15 +79,19 @@ export function collectFiles(dirPath, options = {}) {
       // Sanitize: skip entries with suspicious names
       if (entry.name.includes('\0') || entry.name.includes('..')) continue;
 
-      const fullPath    = resolve(current, entry.name);
-      const relativePath = fullPath.slice(root.length + 1).replace(/\\/g, '/');
+      const fullPath      = resolve(current, entry.name);
+      const relativePath  = fullPath.slice(root.length + 1).replace(/\\/g, '/');
+      const configRelPath = (configDir && fullPath.startsWith(configDir))
+        ? fullPath.slice(configDir.length + 1).replace(/\\/g, '/')
+        : null;
 
       // Skip symlinks (security: avoid traversal outside root)
       if (entry.isSymbolicLink()) continue;
 
       if (entry.isDirectory()) {
         if (SKIP_DIRS.has(entry.name)) continue;
-        if (isIgnored(relativePath + '/', ignorePatterns)) continue;
+        if (isIgnored(relativePath + '/', ignorePatterns) ||
+            (configRelPath && isIgnored(configRelPath + '/', ignorePatterns))) continue;
         walk(fullPath);
         continue;
       }
@@ -97,7 +102,8 @@ export function collectFiles(dirPath, options = {}) {
       const ext = getExt(entry.name);
       if (BINARY_EXTS.has(ext)) continue;
 
-      if (isIgnored(relativePath, ignorePatterns)) continue;
+      if (isIgnored(relativePath, ignorePatterns) ||
+          (configRelPath && isIgnored(configRelPath, ignorePatterns))) continue;
 
       // Check file size
       let size;

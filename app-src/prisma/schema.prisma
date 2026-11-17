@@ -223,7 +223,7 @@ model Finding {
   ruleId         String
   ruleVersion    String?         @default("1.0.0")
   rulePackVersion String?        @default("1.0.0")
-  scannerVersion String?         @default("2.0.0")
+  scannerVersion String?         @default("1.0.0")
   type           String
   category       String
   severity       FindingSeverity

@@ -24,7 +24,12 @@
     "README.md",
     "LICENSE"
   ],
-
+  "scripts": {
+    "test": "node --test ../../tests/dependency-engine/dependency.test.js",
+    "build": "node -e \"process.exit(0)\"",
+    "scan": "node ../cli/bin/secretshield.js scan . --config ../../.secretshield.json",
+    "lint": "node --check index.js src/**/*.js"
+  },
   "keywords": [
     "supply-chain-security",
     "sbom",

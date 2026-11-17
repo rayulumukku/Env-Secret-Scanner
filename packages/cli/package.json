@@ -7,9 +7,18 @@
     "secretshield": "./bin/secretshield.js"
   },
   "scripts": {
-    "start": "node ./bin/secretshield.js"
+    "start": "node ./bin/secretshield.js",
+    "test": "node --test ../../tests/cli/cli.test.js",
+    "build": "node -e \"process.exit(0)\"",
+    "scan": "node ./bin/secretshield.js scan . --config ../../.secretshield.json",
+    "lint": "node --check bin/secretshield.js lib/**/*.js"
   },
   "dependencies": {
+    "@secretshield/config": "^1.0.0",
+    "@secretshield/copilot": "^1.0.0",
+    "@secretshield/dependency-engine": "^1.0.0",
+    "@secretshield/rules": "^1.0.0",
+    "@secretshield/scanner": "^1.0.0",
     "commander": "^12.1.0"
   },
   "engines": {

@@ -10,7 +10,7 @@
  */
 
 import { readFileSync, existsSync } from 'fs';
-import { resolve } from 'path';
+import { resolve, dirname } from 'path';
 
 // ── DEFAULTS ──────────────────────────────────────────────────────────────────
 
@@ -30,6 +30,24 @@ const DEFAULT_CONFIG_FILE = '.secretshield.json';
 // ── LOADER ────────────────────────────────────────────────────────────────────
 
 /**
+ * Walk up directory tree from startDir looking for .secretshield.json.
+ *
+ * @param {string} [startDir=process.cwd()]
+ * @returns {string|null} path to config file or null
+ */
+export function findConfigFile(startDir = process.cwd()) {
+  let current = resolve(startDir);
+  while (true) {
+    const candidate = resolve(current, DEFAULT_CONFIG_FILE);
+    if (existsSync(candidate)) return candidate;
+    const parent = dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  return null;
+}
+
+/**
  * Load configuration from disk.
  * Falls back to defaults if the file doesn't exist or is invalid.
  *
@@ -43,9 +61,9 @@ export function loadConfig(configPath, cwd = process.cwd()) {
   // Determine path to config file
   const filePath = configPath
     ? resolve(configPath)
-    : resolve(cwd, DEFAULT_CONFIG_FILE);
+    : findConfigFile(cwd);
 
-  if (!existsSync(filePath)) {
+  if (!filePath || !existsSync(filePath)) {
     return { config: { ...DEFAULT_CONFIG, scan: { ...DEFAULT_CONFIG.scan } }, source: 'defaults', warnings };
   }
 

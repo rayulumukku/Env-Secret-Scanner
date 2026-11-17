@@ -5,7 +5,11 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "validate": "node -e \"import('./src/index.js').then(m => ['core', 'community', 'enterprise'].forEach(p => console.log(p, m.validateRulePackManifest(m.loadBuiltinPack(p)))))'\""
+    "validate": "node -e \"import('./src/index.js').then(m => ['core', 'community', 'enterprise'].forEach(p => console.log(p, m.validateRulePackManifest(m.loadBuiltinPack(p)))))\"",
+    "test": "node --test ../../tests/rules/rules.test.js",
+    "build": "node -e \"process.exit(0)\"",
+    "scan": "node ../cli/bin/secretshield.js scan . --config ../../.secretshield.json",
+    "lint": "node --check src/index.js src/**/*.js"
   },
   "keywords": [
     "secretshield",

@@ -11,9 +11,14 @@
   "scripts": {
     "dev": "npm run dev --workspace=secretshield-web",
     "build": "npm run build --workspace=secretshield-web",
+    "build:web": "npm run build --workspace=secretshield-web",
     "start": "npm run start --workspace=secretshield-web",
     "lint": "npm run lint --workspace=secretshield-web",
     "scan": "node packages/cli/bin/secretshield.js scan .",
+    "ci": "node packages/cli/bin/secretshield.js ci",
+    "benchmark": "node packages/cli/bin/secretshield.js benchmark",
+    "test": "node --test tests/**/*.test.js",
+    "validate": "npm run validate --workspace=@secretshield/rules",
     "db:generate": "npx prisma generate --schema=app-src/prisma/schema.prisma"
   },
   "description": "SecretShield — unified secret detection ecosystem for developers"

@@ -41,7 +41,7 @@ export async function dependenciesCommand(subcommand = '', targetPath = '.', opt
 
     if (options.quiet) return 0;
 
-    console.log('\n  SecretShield  v2.0  Dependency Tree');
+    console.log('\n  SecretShield  v1.0.0  Dependency Tree');
     console.log('  ─────────────────────────────────────────────────────────────────────────────\n');
     console.log(formatAsciiDependencyTree(scanResult.graph.tree));
     console.log(`\n  Total: ${scanResult.statistics.totalDependencies} dependencies (${scanResult.statistics.directCount} direct, ${scanResult.statistics.transitiveCount} transitive)\n`);
@@ -81,7 +81,7 @@ export async function dependenciesCommand(subcommand = '', targetPath = '.', opt
         return 0;
       }
 
-      console.log('\n  SecretShield  v2.0  Proposed Safe Dependency Update (DRY-RUN)');
+      console.log('\n  SecretShield  v1.0.0  Proposed Safe Dependency Update (DRY-RUN)');
       console.log('  ─────────────────────────────────────────────────────────────────────────────\n');
       console.log(patch.diff);
       console.log('\n  Safe dry-run completed. File was NOT modified without explicit confirmation.\n');
@@ -115,7 +115,7 @@ export async function dependenciesCommand(subcommand = '', targetPath = '.', opt
     return scanResult.statistics.criticalHighCount > 0 ? 1 : 0;
   }
 
-  console.log('\n  SecretShield  v2.0  Software Supply-Chain & Dependency Intelligence');
+  console.log('\n  SecretShield  v1.0.0  Software Supply-Chain & Dependency Intelligence');
   console.log('  ─────────────────────────────────────────────────────────────────────────────\n');
 
   console.log(`  Target Path:         ${normPath}`);

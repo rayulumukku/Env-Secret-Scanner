@@ -85,7 +85,7 @@ export async function threatsCommand(action = 'list', target = '', options = {})
     return 0;
   }
 
-  console.log('\n  SecretShield  v2.0  Threat Intelligence');
+  console.log('\n  SecretShield  v1.0.0  Threat Intelligence');
   console.log('  ─────────────────────────────────────────────────────────────────────────────\n');
   console.log(`  Sources: ${snapshot.sources.length}`);
   console.log(`  Items: ${snapshot.items.length}`);

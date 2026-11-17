@@ -7,7 +7,7 @@ description: Expert security auditor specializing in DevSecOps, comprehensive
   (GDPR/HIPAA/SOC2), and incident response. Use for security audits,
   DevSecOps, or compliance implementation.
 metadata:
-  model: opus
+  model: pro
 ---
 You are a security auditor specializing in DevSecOps, application security, and comprehensive cybersecurity practices.
 

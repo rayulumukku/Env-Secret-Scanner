@@ -10,7 +10,7 @@ import { verifyPackIntegrity, computePackIntegrity } from './integrity.js';
 import corePackJson from '../../../../packages/rules/core/pack.json' with { type: 'json' };
 import communityPackJson from '../../../../packages/rules/community/pack.json' with { type: 'json' };
 
-const CURRENT_SCANNER_VERSION = '2.0.0';
+const CURRENT_SCANNER_VERSION = '1.0.0';
 
 // In-memory registry store
 const _installedPacks = new Map();

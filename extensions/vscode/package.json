@@ -25,6 +25,12 @@
   ],
   "icon": "assets/icon.png",
   "main": "./extension.js",
+  "scripts": {
+    "test": "node -e \"process.exit(0)\"",
+    "build": "node -e \"process.exit(0)\"",
+    "scan": "node ../../packages/cli/bin/secretshield.js scan . --config ../../.secretshield.json",
+    "lint": "node --check extension.js"
+  },
 
   "dependencies": {
     "@secretshield/scanner": "file:../../packages/scanner",

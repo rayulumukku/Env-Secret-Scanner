@@ -14,7 +14,7 @@
 const SARIF_VERSION = '2.1.0';
 const SARIF_SCHEMA  = 'https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json';
 const TOOL_NAME     = 'SecretShield';
-const TOOL_VERSION  = '2.0.0';
+const TOOL_VERSION  = '1.0.0';
 const TOOL_URI      = 'https://github.com/rayulumukku/Env-Secret-Scanner';
 
 // Map SecretShield severities to SARIF levels

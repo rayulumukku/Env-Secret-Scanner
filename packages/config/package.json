@@ -12,7 +12,12 @@
     "README.md",
     "LICENSE"
   ],
-
+  "scripts": {
+    "test": "node --test ../../tests/config/config.test.js",
+    "build": "node -e \"process.exit(0)\"",
+    "scan": "node ../cli/bin/secretshield.js scan . --config ../../.secretshield.json",
+    "lint": "node --check index.js"
+  },
   "keywords": [
     "secretshield",
     "configuration",

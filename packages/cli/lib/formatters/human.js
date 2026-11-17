@@ -47,7 +47,7 @@ function bold(text, quiet = false) {
 export function printBanner(quiet = false) {
   if (quiet) return;
   console.log('');
-  console.log(bold('  SecretShield', quiet) + color('  v2.0  secret detection for developers', GRAY, quiet));
+  console.log(bold('  SecretShield', quiet) + color('  v1.0.0  secret detection for developers', GRAY, quiet));
   console.log(color('  ─────────────────────────────────────', GRAY, quiet));
 }
 

@@ -39,7 +39,7 @@ export async function rulesCommand(subAction = 'list', targetArg = '', options =
       return 0;
     }
 
-    console.log('\n  SecretShield  v2.0  Rule Packs & Detection Rules');
+    console.log('\n  SecretShield  v1.0.0  Rule Packs & Detection Rules');
     console.log('  ─────────────────────────────────────────────────────────────────────────────\n');
     console.log('  INSTALLED RULE PACKS:');
     for (const p of packs) {

@@ -9,7 +9,7 @@
  * update:  add new findings to baseline, keep existing
  */
 
-import { resolve } from 'path';
+import { resolve, dirname } from 'path';
 import { collectFiles, getScanner } from '../scanner-bridge.js';
 import { loadConfig } from '../config.js';
 import {
@@ -28,7 +28,8 @@ export async function createBaseline(scanPath, opts = {}) {
     ? resolve(opts.output)
     : resolve(cwd, DEFAULT_BASELINE_FILE);
 
-  const { config: cfg, warnings } = loadConfig(opts.config, cwd);
+  const { config: cfg, warnings, source } = loadConfig(opts.config, cwd);
+  const configDir = (source && source !== 'defaults') ? dirname(source) : null;
   const cliIgnores = opts.ignore
     ? (Array.isArray(opts.ignore) ? opts.ignore : String(opts.ignore).split(',')).map(s => s.trim()).filter(Boolean)
     : [];
@@ -51,6 +52,7 @@ export async function createBaseline(scanPath, opts = {}) {
     ignorePatterns: effectiveIgnore,
     maxFileSize:    cfg.scan.maxFileSize,
     root:           cwd,
+    configDir,
   });
 
   let result;
@@ -139,7 +141,8 @@ export async function updateBaseline(scanPath, opts = {}) {
     ? resolve(opts.baseline)
     : resolve(cwd, DEFAULT_BASELINE_FILE);
 
-  const { config: cfg, warnings } = loadConfig(opts.config, cwd);
+  const { config: cfg, warnings, source } = loadConfig(opts.config, cwd);
+  const configDir = (source && source !== 'defaults') ? dirname(source) : null;
   const cliIgnores = opts.ignore
     ? (Array.isArray(opts.ignore) ? opts.ignore : String(opts.ignore).split(',')).map(s => s.trim()).filter(Boolean)
     : [];
@@ -167,6 +170,7 @@ export async function updateBaseline(scanPath, opts = {}) {
     ignorePatterns: effectiveIgnore,
     maxFileSize:    cfg.scan.maxFileSize,
     root:           cwd,
+    configDir,
   });
 
   let result;
